@@ -84,7 +84,16 @@ export class HUD {
   }
 
   // ------- overlays ---------------------------------------------
+  /** Hide every OTHER overlay so a transition never stacks two popups
+   *  (e.g. game-over panel lingering behind the main menu). */
+  _hideOthers(except) {
+    for (const el of [this.menuEl, this.pauseEl, this.gameOverEl, this.waveClearEl]) {
+      if (el && el !== except) el.style.display = 'none';
+    }
+  }
+
   showMenu(gpuSupported) {
+    this._hideOthers(this.menuEl);
     this.menuEl.style.display = 'flex';
     const webgpu = this.menuEl.querySelector('[data-webgpu]');
     if (webgpu) {
@@ -94,9 +103,13 @@ export class HUD {
     }
   }
   hideMenu() { this.menuEl.style.display = 'none'; }
-  showPause() { this.pauseEl.style.display = 'flex'; }
+  showPause() {
+    this._hideOthers(this.pauseEl);
+    this.pauseEl.style.display = 'flex';
+  }
   hidePause() { this.pauseEl.style.display = 'none'; }
   showWaveClear(wave) {
+    this._hideOthers(this.waveClearEl);
     this.waveClearEl.style.display = 'flex';
     this.waveClearEl.querySelector('[data-wc="#num"]').textContent = wave;
     this.waveClearEl.querySelector('[data-wc="#label"]').textContent = `WAVE ${wave} CLEAR`;
@@ -108,6 +121,7 @@ export class HUD {
    * @param {boolean} isNewHigh
    */
   showGameOver({ score, highScore, wave, kills }, isNewHigh) {
+    this._hideOthers(this.gameOverEl);
     this.gameOverEl.style.display = 'flex';
     this.gameOverEl.querySelector('[data-go="#score"]').textContent = String(Math.floor(score));
     this.gameOverEl.querySelector('[data-go="#high"]').textContent = String(Math.floor(highScore));

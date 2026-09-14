@@ -683,9 +683,82 @@ kbd {
   letter-spacing: 3px;
 }
 
+/* ---- touch controls (auto-shown on touch devices) ------------------------- */
+#touch-controls {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
+  touch-action: none;
+}
+#touch-controls.on { display: flex; }
+
+.tc-stick {
+  pointer-events: auto;
+  position: relative;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 42%, rgba(45, 226, 255, 0.12), rgba(7, 16, 32, 0.5) 72%);
+  border: 1px solid var(--panel-line);
+  box-shadow: 0 0 26px rgba(45, 226, 255, 0.2), inset 0 0 22px rgba(45, 226, 255, 0.1);
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+.tc-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 58px;
+  height: 58px;
+  margin: -29px 0 0 -29px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 34%, #aef6ff, #2de2ff 55%, #0c7ca6);
+  box-shadow: 0 0 18px var(--glow), 0 0 44px rgba(45, 226, 255, 0.35);
+  transition: transform 0.12s ease-out; /* springs back to center on release */
+  will-change: transform;
+  pointer-events: none;
+}
+.tc-stick.dragging .tc-knob { transition: none; }
+
+.tc-fire {
+  pointer-events: auto;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 93, 143, 0.55);
+  background: radial-gradient(circle at 50% 38%, rgba(255, 93, 143, 0.24), rgba(20, 8, 16, 0.55) 75%);
+  color: var(--danger);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-shadow: 0 0 10px rgba(255, 93, 143, 0.7);
+  box-shadow: 0 0 26px rgba(255, 93, 143, 0.25), inset 0 0 18px rgba(255, 93, 143, 0.12);
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  transition: transform 0.06s ease, box-shadow 0.12s ease;
+}
+.tc-fire.pressed,
+.tc-fire:active {
+  transform: scale(0.94);
+  box-shadow: 0 0 42px rgba(255, 93, 143, 0.55), inset 0 0 28px rgba(255, 93, 143, 0.3);
+}
+
 /* ---- responsive ----------------------------------------------------------- */
 @media (max-width: 720px) {
-  .hud-top, .hud-bottom { flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .hud-top { flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .hud-bottom { flex-wrap: wrap; justify-content: center; gap: 8px; }
   .hud-cell { min-width: 70px; padding: 5px 12px; }
   .hud-value { font-size: 17px; }
   .bar-track, .shield-track { width: 120px; }
@@ -693,6 +766,40 @@ kbd {
   .title { font-size: 34px; letter-spacing: 8px; }
   .subtitle { letter-spacing: 6px; }
   .controls { grid-template-columns: 1fr; }
+}
+
+/* ---- touch layout (MUST stay after the 720px block so it wins) -------------
+   Compact one-line status bar above the stick/fire zone: smaller cells,
+   shorter bars, tighter labels — WEAPON / SHIELD / LIFE fit on one row. */
+@media (pointer: coarse) {
+  .hud-bottom {
+    bottom: calc(164px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    max-width: calc(100vw - 8px);
+  }
+  .hud-bottom .hud-cell {
+    min-width: 0;
+    flex: 0 1 auto;
+    gap: 6px;
+    padding: 5px 10px 6px;
+  }
+  .hud-bottom .hud-cell::before,
+  .hud-bottom .hud-cell::after { width: 8px; }
+  .hud-bottom .hud-label { font-size: 8px; letter-spacing: 2px; }
+  .hud-bottom .hud-value { font-size: 13px; line-height: 1.1; }
+  .hud-bottom .hud-value.life { font-size: 11px; letter-spacing: 1px; }
+  .hud-bottom .bar-track,
+  .hud-bottom .shield-track { width: 44px; height: 9px; }
+  .hud-bottom .weapon-cell { max-width: none; flex-wrap: nowrap; }
+  /* summary mode: hide temporary buff chips to keep a single tight line */
+  .hud-bottom .hud-buff { display: none; }
 }
 
 /* ---- reduced motion ------------------------------------------------------- */
