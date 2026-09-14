@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#03030a" />
+    <title>NEBULA STRIKE — 3D Space Arcade</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpolygon points='16,2 30,30 16,24 2,30' fill='%2300e5ff'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div id="game-root">
+      <!-- the WebGL/WebGPU canvas is appended here by Renderer.js -->
+      <div id="boot-fallback" hidden>
+        <h1>NEBULA STRIKE</h1>
+        <p>Renderer failed to start. Check the browser console for details.</p>
+      </div>
+    </div>
+
+    <!-- HUD overlay: fixed, full-screen, pointer-events:none so keys
+         reach the game; buttons re-enable pointer-events. FloatingText
+         score popups (.score-float) are appended here by the engine. -->
+    <div id="hud">
+      <!-- top bar -->
+      <div class="hud-top">
+        <div class="hud-cell">
+          <span class="hud-label">SCORE</span>
+          <span class="hud-value" data-hud="#score">0</span>
+        </div>
+        <div class="hud-cell">
+          <span class="hud-label">HIGH</span>
+          <span class="hud-value" data-hud="#highScore">0</span>
+        </div>
+        <div class="hud-cell">
+          <span class="hud-label">WAVE</span>
+          <span class="hud-value" data-hud="#wave">1</span>
+        </div>
+        <div class="hud-cell">
+          <span class="hud-label">COMBO</span>
+          <span class="hud-value" data-hud="#combo">x1</span>
+        </div>
+      </div>
+
+      <!-- boss bar (hidden unless a boss is alive) -->
+      <div id="boss-bar" data-hud="#boss" style="visibility:hidden">
+        <span class="boss-label">BOSS</span>
+        <div class="bar-track">
+          <div class="bar-fill boss-fill" data-hud="#bossFill"></div>
+        </div>
+        <span class="boss-phase" data-hud="#bossPhase">PHASE 1</span>
+      </div>
+
+      <!-- bottom bar -->
+      <div class="hud-bottom">
+        <div class="hud-cell weapon-cell">
+          <span class="hud-label">WEAPON</span>
+          <span class="hud-value" data-hud="#weapon">LV 1</span>
+          <span class="hud-buff" data-hud="#rapid" style="display:none">RAPID</span>
+          <span class="hud-buff" data-hud="#pierce" style="display:none">PIERCE</span>
+        </div>
+        <div class="hud-cell shield-cell">
+          <span class="hud-label">SHIELD</span>
+          <div class="bar-track shield-track">
+            <div class="bar-fill shield-fill" data-hud="#shieldFill"></div>
+          </div>
+        </div>
+        <div class="hud-cell life-cell">
+          <span class="hud-label">LIFE</span>
+          <span class="hud-value life" data-hud="#life">&#9670; &#9670; &#9670;</span>
+        </div>
+      </div>
+
+      <!-- MAIN MENU -->
+      <div id="menu" class="overlay">
+        <div class="overlay-card">
+          <h1 class="title">NEBULA&nbsp;STRIKE</h1>
+          <p class="subtitle">3D SPACE ARCADE</p>
+
+          <ul class="controls">
+            <li><span><kbd>A</kbd> / <kbd>D</kbd> 또는 방향키</span><em>이동</em></li>
+            <li><span><kbd>SPACE</kbd></span><em>발사</em></li>
+            <li><span><kbd>SHIFT</kbd></span><em>대시</em></li>
+            <li><span><kbd>P</kbd> / <kbd>ESC</kbd></span><em>일시정지</em></li>
+          </ul>
+
+          <span class="gpu-badge" data-webgpu>WebGPU: 확인 중&hellip;</span>
+
+          <button id="startBtn" class="btn primary" type="button">START GAME</button>
+        </div>
+      </div>
+
+      <!-- PAUSE -->
+      <div id="pause" class="overlay" style="display:none">
+        <div class="overlay-card">
+          <h2 class="overlay-heading">PAUSED</h2>
+          <div class="btn-row">
+            <button id="resumeBtn" class="btn primary" type="button">RESUME</button>
+            <button class="js-restart btn" type="button">RESTART</button>
+            <button class="js-menu btn" type="button">MAIN MENU</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- GAME OVER -->
+      <div id="gameOver" class="overlay" style="display:none">
+        <div class="overlay-card">
+          <h2 class="overlay-heading">GAME OVER</h2>
+          <p class="newhigh" data-go="#newhigh" style="display:none">NEW HIGH SCORE!</p>
+          <div class="go-stats">
+            <div class="go-row"><span>SCORE</span><b data-go="#score">0</b></div>
+            <div class="go-row"><span>HIGH</span><b data-go="#high">0</b></div>
+            <div class="go-row"><span>WAVE</span><b data-go="#wave">1</b></div>
+            <div class="go-row"><span>KILLS</span><b data-go="#kills">0</b></div>
+          </div>
+          <div class="btn-row">
+            <button class="js-restart btn primary" type="button">RETRY</button>
+            <button class="js-menu btn" type="button">MAIN MENU</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- WAVE CLEAR (brief toast between waves) -->
+      <div id="waveClear" class="overlay toast" style="display:none">
+        <div class="overlay-card">
+          <p class="wc-label" data-wc="#label">WAVE 2 CLEAR</p>
+          <p class="wc-num" data-wc="#num">2</p>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

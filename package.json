@@ -1,0 +1,21 @@
+{
+  "name": "nebula-strike",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "NEBULA STRIKE - a modern 3D re-imagining of the classic fixed-plane arcade shooter, powered by Three.js WebGPU.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.182.0"
+  },
+  "devDependencies": {
+    "vite": "^7.0.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}
