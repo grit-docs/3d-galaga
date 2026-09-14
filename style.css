@@ -769,37 +769,69 @@ kbd {
 }
 
 /* ---- touch layout (MUST stay after the 720px block so it wins) -------------
-   Compact one-line status bar above the stick/fire zone: smaller cells,
-   shorter bars, tighter labels — WEAPON / SHIELD / LIFE fit on one row. */
+   Mobile: BOTH status bars stack at the top of the screen (the bottom bar
+   sits directly under the top bar) and are ~half the desktop size.
+   #hud is turned into a column — only the two bars flow in it; every other
+   child (boss bar, touch controls, overlays, score floats) is absolute and
+   stays out of the flow. */
 @media (pointer: coarse) {
+  #hud {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding-top: calc(8px + env(safe-area-inset-top, 0px));
+  }
+
+  /* ---- top bar (SCORE/HIGH/WAVE/COMBO), ~half size ---- */
+  .hud-top {
+    position: static;
+    gap: 6px;
+    padding: 0;
+  }
+  .hud-top .hud-cell {
+    min-width: 0;
+    gap: 1px;
+    padding: 3px 10px 4px;
+  }
+  .hud-top .hud-cell::before,
+  .hud-top .hud-cell::after { width: 8px; }
+  .hud-top .hud-label { font-size: 7px; letter-spacing: 2px; }
+  .hud-top .hud-value { font-size: 12px; line-height: 1.1; }
+
+  /* ---- bottom bar (WEAPON/SHIELD/LIFE), right below the top bar ---- */
   .hud-bottom {
-    bottom: calc(164px + env(safe-area-inset-bottom, 0px));
-    left: 50%;
+    position: static;
+    left: auto;
     right: auto;
-    transform: translateX(-50%);
-    flex-wrap: nowrap;
+    bottom: auto;
+    transform: none;
+    flex-wrap: wrap;
     justify-content: center;
     align-items: center;
     gap: 6px;
-    padding: 6px 10px;
+    padding: 0;
     max-width: calc(100vw - 8px);
   }
   .hud-bottom .hud-cell {
     min-width: 0;
     flex: 0 1 auto;
-    gap: 6px;
-    padding: 5px 10px 6px;
+    gap: 5px;
+    padding: 3px 10px 4px;
   }
   .hud-bottom .hud-cell::before,
   .hud-bottom .hud-cell::after { width: 8px; }
-  .hud-bottom .hud-label { font-size: 8px; letter-spacing: 2px; }
-  .hud-bottom .hud-value { font-size: 13px; line-height: 1.1; }
-  .hud-bottom .hud-value.life { font-size: 11px; letter-spacing: 1px; }
+  .hud-bottom .hud-label { font-size: 7px; letter-spacing: 2px; }
+  .hud-bottom .hud-value { font-size: 12px; line-height: 1.1; }
+  .hud-bottom .hud-value.life { font-size: 10px; letter-spacing: 1px; }
   .hud-bottom .bar-track,
-  .hud-bottom .shield-track { width: 44px; height: 9px; }
+  .hud-bottom .shield-track { width: 36px; height: 7px; }
   .hud-bottom .weapon-cell { max-width: none; flex-wrap: nowrap; }
   /* summary mode: hide temporary buff chips to keep a single tight line */
   .hud-bottom .hud-buff { display: none; }
+
+  /* boss bar clears the stacked bars at the top */
+  #boss-bar { top: 92px; }
 }
 
 /* ---- reduced motion ------------------------------------------------------- */
