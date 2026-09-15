@@ -24,6 +24,17 @@ export class Renderer {
     this.camera = null;
     this._baseCamPos = new THREE.Vector3().fromArray([CAMERA.POS.x, CAMERA.POS.y, CAMERA.POS.z]);
     this._baseCamLook = new THREE.Vector3().fromArray([CAMERA.LOOK.x, CAMERA.LOOK.y, CAMERA.LOOK.z]);
+    // Touch/pen (portrait phone) framing flag — same test as the touch
+    // controls in InputManager. When true, cameraBase() aims the camera
+    // lower so the player ship sits higher on-screen (see CAMERA.MOBILE_LOOK_LIFT).
+    this._coarse = (() => {
+      try {
+        return !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)
+          || 'ontouchstart' in window
+          || navigator.maxTouchPoints > 0;
+      } catch { return false; }
+    })();
+    this._lookOut = new THREE.Vector3();
   }
 
   async init() {
@@ -84,9 +95,20 @@ export class Renderer {
     this.renderer.setSize(w, h);
   }
 
-  /** Restore base camera framing (called each frame before custom cam FX). */
+  /** Restore base camera framing (called each frame before custom cam FX).
+   * On mobile (coarse pointer) the look target is aimed lower on narrow
+   * viewports, which shifts the whole scene UP — lifting the player ship
+   * off the bottom edge on portrait phones. Scaling with (1.35 - aspect)
+   * means wide/desktop-ish views are unaffected. */
   cameraBase() {
-    return { pos: this._baseCamPos, look: this._baseCamLook };
+    let lookY = this._baseCamLook.y;
+    if (this._coarse && this.camera) {
+      const narrow = Math.max(0, 1.35 - this.camera.aspect);
+      lookY -= narrow * CAMERA.MOBILE_LOOK_LIFT;
+    }
+    this._lookOut.copy(this._baseCamLook);
+    this._lookOut.y = lookY;
+    return { pos: this._baseCamPos, look: this._lookOut };
   }
 
   dispose() {

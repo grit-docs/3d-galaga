@@ -31,6 +31,12 @@ const _mLook = new THREE.Matrix4();
 const _fireDir = new THREE.Vector3();
 const _rotDir = new THREE.Vector3();
 
+/** Size an enemy eases to as a dive closes in on the player.
+ * Full-size enemies right next to the player read disproportionately large,
+ * so the hull (and its hitbox) shrinks near closest approach and eases back
+ * to 1 on the way out. */
+const DIVE_SHRINK = 0.5;
+
 export class Enemy {
   constructor(type) {
     this.type = type;
@@ -38,7 +44,9 @@ export class Enemy {
     this.group = buildEnemyShip(type, this.palette);
     this.group.name = `enemy-${type}`;
 
-    this.radius = ENEMY.RADIUS[type];
+    this._baseRadius = ENEMY.RADIUS[type];
+    this.radius = this._baseRadius;
+    this._diveScale = 1; // dive-shrink factor, eases toward DIVE_SHRINK
     this.maxHp = 1;
     this.hp = 1;
 
@@ -93,6 +101,9 @@ export class Enemy {
       : new THREE.Vector3(this.formationSlot.x * 1.8, 8, -85);
     this._buildCurve(from, this.formationSlot);
     this.group.position.copy(from);
+    // start full-size (a recycled enemy may have died mid-shrink at 0.5)
+    this._diveScale = 1;
+    this.group.scale.setScalar(1);
     this.group.visible = true;
   }
 
@@ -175,6 +186,7 @@ export class Enemy {
   update(game, dt, wave) {
     if (!this.active || this.dying) return;
     this._t += dt;
+    this._updateDiveScale(dt);
     this._engineGlow();
     this._corePulse();
     this._hitPulse(dt);
@@ -279,18 +291,32 @@ export class Enemy {
     return false;
   }
 
+  /** Ease the hull (and hitbox) toward DIVE_SHRINK as a dive closes in on
+   * the player; back to full size otherwise. The change is eased so nothing
+   * visibly pops. */
+  _updateDiveScale(dt) {
+    let target = 1;
+    if (this.state === 'DIVING') {
+      // curveT 0 = formation release; closest pass beside the player is
+      // around 0.75, so the shrink lands right before the close pass.
+      const near = THREE.MathUtils.smoothstep(this._curveT, 0.3, 0.7);
+      target = 1 + (DIVE_SHRINK - 1) * near;
+    }
+    this._diveScale = THREE.MathUtils.damp(this._diveScale, target, 8, dt);
+    // keep the hitbox honest: it must never outgrow the shrunk visual
+    this.radius = this._baseRadius * this._diveScale;
+  }
+
   /** Visual-only punch applied each frame while a recent hit decays. */
   _hitPulse(dt) {
     if (this._hitFlash <= 0) {
-      if (this._pulsed) {
-        this._pulsed = false;
-        this.group.scale.setScalar(1);
-      }
+      this._pulsed = false;
+      this.group.scale.setScalar(this._diveScale);
       return;
     }
     this._hitFlash = Math.max(0, this._hitFlash - dt * 7); // ~0.14s punch
     this._pulsed = true;
-    const s = 1 + this._hitFlash * 0.28;
+    const s = this._diveScale * (1 + this._hitFlash * 0.28);
     this.group.scale.setScalar(s);
   }
 

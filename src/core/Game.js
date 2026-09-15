@@ -219,7 +219,8 @@ export class Game {
       // canonical per-type radius from config (the old code kept the
       // previous type's radius, so heavies/interceptors collided
       // with fighter-sized hitboxes).
-      e.radius = ENEMY_CFG.RADIUS[type] ?? e.radius;
+      e._baseRadius = ENEMY_CFG.RADIUS[type] ?? e._baseRadius;
+      e.radius = e._baseRadius;
       e._collectEngines();
       void g; // old group is orphaned (GC will reclaim)
     }

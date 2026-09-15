@@ -175,6 +175,11 @@ export const CAMERA = {
   // (The earlier 0->1.2 bump aimed HIGHER, which tilted the camera up and
   // shoved the player toward the bottom edge — wrong direction.)
   LOOK: { x: 0, y: -4, z: -14 },
+  // Mobile (coarse pointer) portrait framing: the HUD stacks at the top
+  // there, so the ship — framed for the desktop bottom bar — sits too
+  // low. cameraBase() aims the camera this much lower (world units) per
+  // unit of (1.35 - aspect), lifting the ship on-screen on narrow views.
+  MOBILE_LOOK_LIFT: 1.6,
   PLAYER_FOLLOW: 0.06, // lateral follow ratio
   SHAKE_DECAY: 5.5,
   BOSS_ZOOM: { x: 0, y: 15.5, z: 33.5 },
