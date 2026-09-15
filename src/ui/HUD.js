@@ -37,6 +37,13 @@ export class HUD {
     this.bossFill = root.querySelector('[data-hud="#bossFill"]');
     this.bossPhaseEl = root.querySelector('[data-hud="#bossPhase"]');
 
+    // Damage-feedback overlay: a red edge vignette that pulses every
+    // time the player is hit (built once, re-triggered via CSS animation).
+    const dmg = document.createElement('div');
+    dmg.className = 'damage-flash';
+    this._damageFlashEl = dmg;
+    root.appendChild(dmg);
+
     this.menuEl = root.querySelector('#menu');
     this.pauseEl = root.querySelector('#pause');
     this.gameOverEl = root.querySelector('#gameOver');
@@ -77,6 +84,20 @@ export class HUD {
     if (!this.rapidEl) return;
     this.rapidEl.style.display = showRapid ? '' : 'none';
     this.rapidEl.textContent = rapidLevel > 1 ? `RAPID ${rapidLevel}` : 'RAPID';
+  }
+
+  /**
+   * Pulse the red damage vignette when the player is hit.
+   * @param {'hit'|'lostLife'|'dead'} kind hit = shield chip,
+   *   lostLife/dead = a harder, brighter double pulse.
+   */
+  flashDamage(kind = 'hit') {
+    const el = this._damageFlashEl;
+    if (!el) return;
+    el.classList.remove('damage-flash-hit', 'damage-flash-severe');
+    // force reflow so the CSS animation restarts even on rapid hits
+    void el.offsetWidth;
+    el.classList.add(kind === 'hit' ? 'damage-flash-hit' : 'damage-flash-severe');
   }
 
   // ------- boss --------------------------------------------------

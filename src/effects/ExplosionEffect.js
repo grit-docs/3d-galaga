@@ -24,7 +24,7 @@ export class ExplosionEffect {
     this._particles = particleSystem;
 
     // one shared point light, re-used every frame — no allocation
-    this._flash = new THREE.PointLight(COLORS.ENEMIES.fighter.glow, 0, 20, 2);
+    this._flash = new THREE.PointLight(0xffe8c8, 0, 26, 2);
     this._flash.visible = false;
     scene.add(this._flash);
     this._flashTimer = 0;
@@ -71,14 +71,22 @@ export class ExplosionEffect {
     this._emitBurst(pos, 0xffffff, 26, 30, 6, 0.5, 1);
   }
 
-  /** Player hit — cooler tint. */
+  /**
+   * Player hit — deliberately BRIGHT and warm-tinted. The burst sits on
+   * top of the cool blue player hull + nebula, so white-hot + red/orange
+   * sparks give maximum contrast and make every hit unmistakable.
+   */
   playerHit(pos) {
     this._flash.position.copy(pos);
     this._flashTimer = FLASH_DURATION;
     this._flash.visible = true;
-    this._flash.intensity = FLASH_STRENGTH * 1.4;
-    this._emitBurst(pos, 0x3dc9ff, 16, 40, 10, 0.7, 3);
-    this._emitBurst(pos, 0xffffff, 22, 20, 6, 0.4, 1);
+    this._flash.intensity = FLASH_STRENGTH * 3;
+    // hot white core — the first thing you see the instant of impact
+    this._emitBurst(pos, 0xffffff, 30, 18, 6, 0.35, 0.5);
+    // warm red/orange flying sparks (contrasts the blue scene)
+    this._emitBurst(pos, 0xff5d3d, 20, 34, 9, 0.75, 2.5);
+    // cooler cyan debris as the outer shockwave
+    this._emitBurst(pos, 0x3dc9ff, 16, 26, 10, 0.9, 2.0);
   }
 
   /** Ship totally destroyed (life lost) — big fiery debris explosion. */

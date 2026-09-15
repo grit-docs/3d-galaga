@@ -59,6 +59,7 @@ export class EnemyAttackSystem {
         if (dx * dx + dy * dy < ELITE_BEAM_RADIUS * ELITE_BEAM_RADIUS) {
           player.heal(-PLAYER_SHIELD_HIT);
           this._game.audio?.play?.('playerHit');
+          this._game.hud?.flashDamage?.('hit');
         }
         this._eliteBeam.active = false;
       }

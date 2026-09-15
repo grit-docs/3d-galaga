@@ -420,6 +420,8 @@ export class Game {
     this.hud.setCombo(1);
     this.audio.play('playerHit');
     this._cameraFx.addShake(0.5);
+    // red edge vignette pulse so every hit is unmistakable on screen
+    this.hud.flashDamage(result === 'hit' ? 'hit' : 'severe');
     this.hud.setShield(p.shield / PLAYER.MAX_SHIELD);
     this.hud.setLife(p.lives);
 
