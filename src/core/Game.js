@@ -405,6 +405,9 @@ export class Game {
     // completion when everything has been spawned AND killed.
     this.waveSystem.enemyDied();
     if (this.waveSystem.isComplete && this._context.player.alive) {
+      // Wipe remaining enemy fire so they don't linger on top of the
+      // "WAVE CLEAR" banner (player's live lasers are kept).
+      this._context.projectiles.deactivateHostile();
       this._waveClearTimer = WAVE_CFG.WAVE_CLEAR_TIME;
       this.state.transition(States.WAVE_CLEAR);
       this.hud.showWaveClear(this.waveSystem.wave + 1);
