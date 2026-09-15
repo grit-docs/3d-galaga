@@ -24,10 +24,10 @@ export class Player {
   constructor() {
     this.group = buildPlayerShip();
     this.group.name = 'player';
-    // Visual size: 0.63 (base) × 0.9 × 0.9 × 0.8 (three requested reductions)
-    // = 0.40824 of the original hull. The collision radius (`this.radius`)
-    // is scaled with the most recent size change so the hitbox matches.
-    this.group.scale.setScalar(0.63 * 0.9 * 0.9 * 0.8);
+    // Visual size: 0.63 (base) × 0.9 × 0.9 × 0.8 × 0.8 (four requested
+    // reductions) = 0.3266 of the original hull. The collision radius
+    // (`this.radius`) is scaled with the same factor so the hitbox matches.
+    this.group.scale.setScalar(0.63 * 0.9 * 0.9 * 0.8 * 0.8);
 
     this.velocityX = 0;
     this.alive = true;
@@ -48,8 +48,8 @@ export class Player {
     this._collectEngines();
 
     this._t = 0;
-    // 1.35 base x 0.9 x 0.8 (the player-size reductions) = 0.972
-    this.radius = 1.35 * 0.9 * 0.8;
+    // 1.35 base x 0.9 x 0.8 x 0.8 (the player-size reductions) = 0.7776
+    this.radius = 1.35 * 0.9 * 0.8 * 0.8;
   }
 
   _collectEngines() {

@@ -296,8 +296,8 @@ export class Game {
   // gameplay helpers
   // ----------------------------------------------------------------
   _startMenuAmbient() {
-    // keep the starfield moving for the menu background
-    this._context.starfield._points.visible = true;
+    // keep the starfield (stars + motion trails) moving for the menu
+    this._context.starfield.setActive(true);
   }
 
   _enterMainMenu() {

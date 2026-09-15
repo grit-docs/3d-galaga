@@ -54,6 +54,10 @@ export class Projectile {
     // enemy orb (generic hostile shot)
     this.enemyShot = new THREE.Mesh(GEO_ENEMY, MAT_ENEMY);
     this.enemyCore = new THREE.Mesh(GEO_CORE, MAT_ENEMY_CORE);
+    // enemy bullets are 30% smaller (visual only — the shared hitbox radius
+    // in spawn() is untouched, so dodging fairness is unchanged).
+    this.enemyShot.scale.setScalar(0.7);
+    this.enemyCore.scale.setScalar(0.7);
     this.group.add(this.enemyShot, this.enemyCore);
     this.enemyShot.visible = false;
     this.enemyCore.visible = false;

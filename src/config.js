@@ -32,8 +32,9 @@ export const BOUNDS = {
 };
 
 export const PLAYER = {
-  ACCEL_X: 60, // halved from 120 — accel/drag restored for a controlled,
-  // less floaty feel; DRAG 9 pairs with it (steady-state ≈ ACCEL/DRAG)
+  // Movement 20% faster via accel 60→72 (cruise = ACCEL/DRAG, the real
+  // speed; MAX_SPEED_X is just a never-hit safety cap).
+  ACCEL_X: 72,
   MAX_SPEED_X: 34,
   DRAG: 9,
   BANK_TILT: 0.55,
@@ -119,6 +120,9 @@ export const ENEMY = {
 
 export const ENEMY_PROJECTILE = {
   BASE_SPEED: 16,
+  // Global slowdown multiplier applied to every hostile shot (×0.9 = 10%
+  // slower). Applies to regular enemies AND boss shots.
+  SPEED_SCALE: 0.9,
   DAMAGE: 22,
   WAVESPEED_BONUS: 1.6, // + per wave above 1
 };

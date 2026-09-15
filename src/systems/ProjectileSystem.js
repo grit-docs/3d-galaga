@@ -10,7 +10,7 @@
  * ---------------------------------------------------------------
  */
 import * as THREE from 'three/webgpu';
-import { POOL_DEFAULTS } from '../config.js';
+import { ENEMY_PROJECTILE, POOL_DEFAULTS } from '../config.js';
 import { Pool } from '../core/Pool.js';
 import { Projectile } from '../entities/Projectile.js';
 import { PowerUp } from '../entities/PowerUp.js';
@@ -71,7 +71,9 @@ export class ProjectileSystem {
   }
 
   spawnEnemyShot({ origin, dir, speed, damage, scale = 1, kind, life, radius }) {
-    const v = dir.clone().multiplyScalar(speed);
+    // Enemy bullets are 10% slower than their raw `speed` (config
+    // ENEMY_PROJECTILE.SPEED_SCALE) so they're easier to dodge.
+    const v = dir.clone().multiplyScalar(speed * ENEMY_PROJECTILE.SPEED_SCALE);
     const p = this._projectilePool.acquire();
     p.spawn({
       position: origin,
@@ -80,7 +82,8 @@ export class ProjectileSystem {
       damage,
       scale,
       kind, life,
-      radius: radius ?? 0.55,
+      // hitbox matches the 30%-smaller visual ball (0.55 x 0.7)
+      radius: radius ?? 0.385,
     });
     this._activeProjectiles.add(p);
     return p;
