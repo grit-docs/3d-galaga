@@ -261,18 +261,33 @@ export class Enemy {
   _fire(game, wave, count) {
     const speed = ENEMY_PROJECTILE.BASE_SPEED + ENEMY_PROJECTILE.WAVESPEED_BONUS * Math.max(0, wave - 1);
     const ctx = game._context;
+    // Aim at the player in 3D (x/y/z): formation shots come from y 0..~10
+    // while the player sits at y≈1.1 — a horizontal aim makes those shots
+    // fly PAST the craft, which read as "bullets vanishing nearby". With
+    // the vertical component they actually arrive at player height.
+    const pp = ctx.player?.group?.position;
+    const alive = ctx.player?.alive;
+    const ox = this.group.position.x;
+    const oy = this.group.position.y;
+    const oz = this.group.position.z;
+    const dx0 = (alive ? pp.x : 0) - ox;
+    const dy0 = (alive ? pp.y : -0.5) - oy;
+    const dz0 = (alive ? pp.z : oz + 40) - oz;
+    const len0 = Math.sqrt(dx0 * dx0 + dy0 * dy0 + dz0 * dz0) || 1;
+    const bx = dx0 / len0, by = dy0 / len0, bz = dz0 / len0;
     for (let i = 0; i < count; i++) {
       const spread = (i - (count - 1) / 2) * 0.16;
-      _rotDir.set(Math.sin(spread), 0, Math.cos(spread));
+      const c = Math.cos(spread), s = Math.sin(spread);
+      // rotate the base aim around the Y axis for the volley fan
+      _fireDir.set(bx * c + bz * s, by, -bx * s + bz * c).normalize();
       // B4: named-argument spawn — single canonical shape.
       ctx.spawnEnemyShot({
         origin: this.group.position,
-        dir: _rotDir,
+        dir: _fireDir,
         speed,
         damage: this.damageFor(wave),
       });
     }
-    void _fireDir;
   }
 
   damageFor(wave) {

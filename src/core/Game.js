@@ -404,7 +404,7 @@ export class Game {
     // wave progress — count the kill so `enemyDied` can flag
     // completion when everything has been spawned AND killed.
     this.waveSystem.enemyDied();
-    if (this.waveSystem.isComplete) {
+    if (this.waveSystem.isComplete && this._context.player.alive) {
       this._waveClearTimer = WAVE_CFG.WAVE_CLEAR_TIME;
       this.state.transition(States.WAVE_CLEAR);
       this.hud.showWaveClear(this.waveSystem.wave + 1);
@@ -501,7 +501,7 @@ export class Game {
     // If escorts remain, keep PLAYING — the wave will transition to
     // WAVE_CLEAR via the normal _onEnemyKilled isComplete check once
     // the last escort dies.  If there are no escorts, clear immediately.
-    if (this.waveSystem.isComplete) {
+    if (this.waveSystem.isComplete && this._context.player.alive) {
       this._waveClearTimer = WAVE_CFG.WAVE_CLEAR_TIME;
       this.state.transition(States.WAVE_CLEAR);
       this.hud.showWaveClear(this.waveSystem.wave + 1);
@@ -666,7 +666,13 @@ export class Game {
     // wave clear timer
     if (s === States.WAVE_CLEAR) {
       this._waveClearTimer -= dt;
-      if (this._waveClearTimer <= 0) {
+      // Re-check the LIVE state before starting the next wave: `s` was
+      // captured at frame start, but the player can die mid-frame
+      // (leftover enemy fire during the lull, or a same-frame death
+      // before this frame's kill finished the wave) and flip to
+      // GAME_OVER — starting the next wave would overwrite GAME_OVER
+      // and begin it with no player ship.
+      if (this._waveClearTimer <= 0 && this.state.current === States.WAVE_CLEAR) {
         this.hud.hideWaveClear();
         this._startWave(this.waveSystem.wave + 1);
       }
@@ -675,7 +681,10 @@ export class Game {
     // boss intro timer
     if (s === States.BOSS_INTRO) {
       this._bossIntroTimer -= dt;
-      if (this._bossIntroTimer <= 0) {
+      // Same race as above: if the player died during the intro
+      // (leftover shots) the GAME_OVER transition must not be
+      // overwritten by the intro's return to PLAYING.
+      if (this._bossIntroTimer <= 0 && this.state.current === States.BOSS_INTRO) {
         this.state.transition(States.PLAYING);
       }
     }

@@ -712,10 +712,12 @@ kbd {
     0 0 60px rgba(45, 226, 255, 0.4);
 }
 
-/* ---- damage feedback: red edge vignette on player hit ------------------- */
+/* ---- damage feedback: full-screen red flash on player hit --------------- */
 /* Built by HUD.js, re-triggered per hit by swapping the animation class.
-   Edges glow red + a faint full-screen tint, then decay fast. The severe
-   variant (life lost / death) is brighter and lasts a touch longer. */
+   The ENTIRE screen tints red (strong center glow that still saturates
+   the whole frame), ~3x darker than the old edge-only vignette. The
+   severe variant (life lost / death) is brighter and lasts a touch
+   longer. Opacity keyframes drive the pulse; the gradient is static. */
 .damage-flash {
   position: absolute;
   inset: 0;
@@ -723,11 +725,10 @@ kbd {
   pointer-events: none;
   opacity: 0;
   background:
-    radial-gradient(120% 95% at 50% 55%,
-      transparent 38%,
-      rgba(255, 40, 40, 0.12) 62%,
-      rgba(255, 30, 30, 0.5) 88%,
-      rgba(255, 20, 20, 0.75) 100%);
+    radial-gradient(130% 100% at 50% 50%,
+      rgba(255, 30, 30, 0.75) 0%,
+      rgba(255, 10, 10, 0.5) 45%,
+      rgba(255, 0, 0, 0.85) 100%);
 }
 .damage-flash-hit {
   animation: damage-pulse-hit 0.55s ease-out;
@@ -736,15 +737,15 @@ kbd {
   animation: damage-pulse-severe 0.9s ease-out;
 }
 @keyframes damage-pulse-hit {
-  0%   { opacity: 0.95; }
-  18%  { opacity: 0.55; }
-  38%  { opacity: 0.75; } /* slight re-bloom so it reads as a double shock */
+  0%   { opacity: 1; }
+  18%  { opacity: 0.7; }
+  38%  { opacity: 0.85; } /* slight re-bloom so it reads as a double shock */
   100% { opacity: 0; }
 }
 @keyframes damage-pulse-severe {
   0%   { opacity: 1; }
-  22%  { opacity: 0.6; }
-  45%  { opacity: 0.9; }
+  22%  { opacity: 0.75; }
+  45%  { opacity: 1; }
   100% { opacity: 0; }
 }
 

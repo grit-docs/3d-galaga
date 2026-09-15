@@ -75,13 +75,22 @@ export class ProjectileSystem {
     // ENEMY_PROJECTILE.SPEED_SCALE) so they're easier to dodge.
     const v = dir.clone().multiplyScalar(speed * ENEMY_PROJECTILE.SPEED_SCALE);
     const p = this._projectilePool.acquire();
+    // Lifetime: explicit `life` wins (boss mines pass 6s); otherwise
+    // give a regular shot enough time to actually REACH the player —
+    // worst case spawn is ~85 units away (z -68 .. player 17) at the
+    // slowest wave-1 speed (16 * 0.9 = 14.4/s) ≈ 5.9s. The old blanket
+    // 4.0s expiry killed bullets mid-flight near the player, reading as
+    // "shots disappearing around the craft".
+    const dist = Math.hypot(origin.x, origin.z - 17);
+    const needed = dist / (speed * ENEMY_PROJECTILE.SPEED_SCALE);
     p.spawn({
       position: origin,
       velocity: v,
       hostile: true,
       damage,
       scale,
-      kind, life,
+      kind,
+      life: life ?? Math.min(12, needed + 1.5),
       // hitbox matches the 30%-smaller visual ball (0.55 x 0.7)
       radius: radius ?? 0.385,
     });
