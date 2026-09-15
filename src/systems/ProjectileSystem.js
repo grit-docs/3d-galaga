@@ -63,24 +63,8 @@ export class ProjectileSystem {
       velocity: dir,
       hostile: false,
       damage: stats.baseDamage,
-      pierce: stats.pierce ? 2 : 0,
+      pierce: 0,
       scale: 1.0,
-    });
-    this._activeProjectiles.add(p);
-    return p;
-  }
-
-  spawnPlayerShotFromDrone({ origin, angle, stats }) {
-    const speed = stats.baseSpeed;
-    const dir = new THREE.Vector3(-Math.sin(angle) * speed, 0, -Math.cos(angle) * speed);
-    const p = this._projectilePool.acquire();
-    p.spawn({
-      position: origin,
-      velocity: dir,
-      hostile: false,
-      damage: Math.round(stats.baseDamage * 0.6),
-      pierce: stats.pierce ? 1 : 0,
-      scale: 0.8,
     });
     this._activeProjectiles.add(p);
     return p;

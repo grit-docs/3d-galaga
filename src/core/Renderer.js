@@ -73,7 +73,9 @@ export class Renderer {
   }
 
   resize() {
-    if (!this.renderer) return;
+    // A resize event can fire while init() is still awaiting (mobile
+    // viewports adjust on load) — camera/scene don't exist until then.
+    if (!this.renderer || !this.camera) return;
     const w = window.innerWidth;
     const h = window.innerHeight;
     this.camera.aspect = w / h;

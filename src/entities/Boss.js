@@ -51,10 +51,11 @@ export class Boss {
     this._enterCueShown = false; // one-shot SHIELD DOWN popup flag
     this._collectParts();
 
-    // "Make it big": upscale the whole dreadnought about its center. The
-    // collision radius (config BOSS.RADIUS) is the tuned hitbox that tracks
-    // the scaled visual, so both grow together.
-    this.group.scale.set(1.2, 1.2, 1.2);
+    // "Make it big": upscale the whole dreadnought about its center.
+    // 2.34 = 1.2 (base) x 1.3 (30% enlargement) x 1.5 (a further 50%).
+    // The collision radius (config BOSS.RADIUS) is the tuned hitbox that
+    // tracks the scaled visual, so both grow together.
+    this.group.scale.set(2.34, 2.34, 2.34);
     this.group.visible = false;
   }
 
@@ -246,17 +247,20 @@ export class Boss {
       charge(aim(player.x, player.z, 0.08), { ci: 4, speed: mineSpeed + 2, ...mine, damage: 22 });
       charge(aim(player.x, player.z, 0.16), { ci: 1, speed: mineSpeed, ...mine, damage: 20 });
     } else if (this.phase === 2) {
-      // tight 3-mine burst + two wing mines on a shallow ±30° forward arc
+      // tight 3-mine burst + two wing mines — ALL aimed forward at the
+      // player now (previously the two wing mines fired on a fixed ±30°
+      // side angle that ignored the player and read as "side shots")
       charge(aim(player.x, player.z, -0.12), { ci: 3, speed: mineSpeed + 3, ...mine, damage: 24 });
       charge(aim(player.x, player.z), { ci: 2, speed: mineSpeed + 4, ...mine, damage: 26 });
       charge(aim(player.x, player.z, 0.12), { ci: 4, speed: mineSpeed + 3, ...mine, damage: 24 });
-      charge(_dir.set(-0.5, 0, 0.866).normalize(), { ci: 0, speed: mineSpeed, ...mine });
-      charge(_dir.set(0.5, 0, 0.866).normalize(), { ci: 1, speed: mineSpeed, ...mine });
+      charge(aim(player.x, player.z, -0.05), { ci: 0, speed: mineSpeed, ...mine, damage: 22 });
+      charge(aim(player.x, player.z, 0.05), { ci: 1, speed: mineSpeed, ...mine, damage: 22 });
     } else {
-      // phase 3: forward fan of mines — all eight travel toward the player
-      // (±60° around the aim line) instead of a full 360° ring
+      // phase 3: forward fan of mines — all eight travel toward the player.
+      // Tightened to ±28° (was ±60°) so the outermost mines still read as
+      // a forward burst instead of flying out to the sides.
       const n = 8;
-      const half = Math.PI / 3; // 60°
+      const half = Math.PI / 6.5; // ~28°
       const base = aim(player.x, player.z).clone();
       for (let i = 0; i < n; i++) {
         const ang = -half + (i / (n - 1)) * half * 2;

@@ -26,11 +26,13 @@ export class HUD {
     this.highScoreEl = root.querySelector('[data-hud="#highScore"]');
     this.waveEl = root.querySelector('[data-hud="#wave"]');
     this.comboEl = root.querySelector('[data-hud="#combo"]');
+    this.comboCell = root.querySelector('#comboCell');
     this.shieldFill = root.querySelector('[data-hud="#shieldFill"]');
+    this.shieldPctEl = root.querySelector('[data-hud="#shieldPct"]');
     this.lifeEl = root.querySelector('[data-hud="#life"]');
+    this.hearts = this.lifeEl ? this.lifeEl.querySelectorAll('svg') : [];
     this.weaponEl = root.querySelector('[data-hud="#weapon"]');
     this.rapidEl = root.querySelector('[data-hud="#rapid"]');
-    this.pierceEl = root.querySelector('[data-hud="#pierce"]');
     this.bossEl = root.querySelector('[data-hud="#boss"]');
     this.bossFill = root.querySelector('[data-hud="#bossFill"]');
     this.bossPhaseEl = root.querySelector('[data-hud="#bossPhase"]');
@@ -50,26 +52,31 @@ export class HUD {
   setHighScore(n) { this.highScoreEl.textContent = String(Math.max(0, Math.floor(n))); }
   setWave(n) { this.waveEl.textContent = String(n); }
   setCombo(m) {
-    this.comboEl.textContent = `x${Math.max(1, m)}`;
+    m = Math.max(1, m);
+    this.comboEl.textContent = `x${m}`;
     this.comboEl.classList.toggle('hot', m >= 5);
+    if (this.comboCell) this.comboCell.style.visibility = m >= 2 ? 'visible' : 'hidden';
   }
   setShield(ratio) {
-    this.shieldFill.style.width = `${Math.max(0, Math.min(1, ratio)) * 100}%`;
-    this.shieldFill.style.background = ratio > 0.5 ? 'var(--neon)' :
-      ratio > 0.2 ? 'var(--neon2)' : 'var(--danger)';
+    const r = Math.max(0, Math.min(1, ratio));
+    this.shieldFill.style.width = `${r * 100}%`;
+    this.shieldFill.classList.toggle('low', r <= 0.2);
+    this.shieldFill.classList.toggle('mid', r > 0.2 && r <= 0.5);
+    if (this.shieldPctEl) this.shieldPctEl.textContent = `${Math.round(r * 100)}%`;
   }
   setLife(n) {
-    // render 0..3 as ◆ ◇
-    let str = '';
-    for (let i = 0; i < 3; i++) str += i < n ? '◆ ' : '◇ ';
-    this.lifeEl.textContent = str.trimEnd();
+    // render 0..3 as filled / empty hearts
+    for (let i = 0; i < this.hearts.length; i++) {
+      this.hearts[i].classList.toggle('lost', i >= n);
+    }
   }
   setWeaponLevel(n) {
     this.weaponEl.textContent = `LV ${Math.max(1, n)}`;
   }
-  setTimedBuff(showRapid, showPierce) {
+  setTimedBuff(showRapid, rapidLevel = 0) {
+    if (!this.rapidEl) return;
     this.rapidEl.style.display = showRapid ? '' : 'none';
-    this.pierceEl.style.display = showPierce ? '' : 'none';
+    this.rapidEl.textContent = rapidLevel > 1 ? `RAPID ${rapidLevel}` : 'RAPID';
   }
 
   // ------- boss --------------------------------------------------

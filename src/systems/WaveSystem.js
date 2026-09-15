@@ -37,6 +37,12 @@ export class WaveSystem {
     this._spawnedCount = 0;
     this._aliveCount = 0;
     this._spawnTimer = 0.6; // brief pause before first spawner
+    this._bossDead = !this._isBossWave; // non-boss waves skip boss check
+  }
+
+  /** Call when the boss dies so isComplete waits for escorts too. */
+  bossDied() {
+    if (this._isBossWave) this._bossDead = true;
   }
 
   /** Wave scaling helpers (capped so very high waves stay sane). */
@@ -79,94 +85,49 @@ export class WaveSystem {
 
   _layoutFor(wave) {
     const w = wave;
-    if (w === 1) return this._triangle(3, ['fighter']);
-    if (w === 2) return this._triangle(3, ['fighter', 'interceptor']);
-    if (w === 3) return this._vShape(['fighter', 'heavy']);
-    if (w === 4) return this._twinColumns(['interceptor', 'elite']);
-    if (w === 5) return this._triangle(4, ['fighter', 'heavy', 'elite']);
-    if (w === 6) return this._ring(8, ['interceptor', 'elite']);
-    // beyond 6: mix, escalating sizes
-    return this._grid(w);
+    // Galaga-style: clear horizontal rows, tight spacing, one type per row
+    if (w === 1) return this._rows(3, 4, ['fighter']);
+    if (w === 2) return this._rows(3, 5, ['fighter', 'interceptor']);
+    if (w === 3) return this._rows(3, 6, ['fighter', 'heavy', 'interceptor']);
+    if (w === 4) return this._rows(4, 5, ['interceptor', 'heavy']);
+    if (w === 5) return this._rows(4, 6, ['fighter', 'heavy', 'interceptor', 'elite']);
+    if (w === 6) return this._rows(4, 7, ['interceptor', 'elite']);
+    if (w === 7) return this._rows(5, 6, ['fighter', 'heavy', 'elite']);
+    if (w === 8) return this._rows(5, 7, ['interceptor', 'heavy', 'elite']);
+    // beyond 8: cap at 6 rows x 8 cols with mixed rows
+    const rows = Math.min(6, 5 + Math.floor((w - 8) / 2));
+    const cols = Math.min(8, 7 + Math.floor((w - 8) / 3));
+    return this._rows(rows, cols, ['fighter', 'interceptor', 'heavy', 'elite']);
   }
 
   // ---- shape generators (return {type, pos}[]) ---------------------
 
-  _triangle(rows, typeCycle) {
+  /**
+   * Galaga-style horizontal rows. Each row is a tight straight line of
+   * `cols` enemies at the same z. Rows are stacked back-to-front so the
+   * player sees a clean block of enemies lined up in rows, one type per
+   * row (row index cycles the type list).
+   */
+  _rows(rows, cols, typeCycle) {
     const out = [];
-    let t = 0;
+    // spacing between enemies in a row (world units) — widened so the
+    // bugs read as a clean, breathable grid instead of a dense smear
+    const gap = 3.8;
+    // rows span z from near (biggest) to far (smallest); the wider z run
+    // keeps stacked rows visually separated down the depth axis
+    const zNear = BOUNDS.FORMATION_Z_MIN + 3;   // ~-31 (near)
+    const zFar = BOUNDS.FORMATION_Z_MAX - 3;    // ~-49 (far)
     for (let r = 0; r < rows; r++) {
-      const count = 2 * (rows - r) + 1; // 7,5,3 for 3 rows
-      const z = BOUNDS.FORMATION_Z_MAX - r * 3;
-      const span = BOUNDS.FORMATION_X_SPREAD - r * 1.5;
-      for (let c = 0; c < count; c++) {
-        const x = count === 1 ? 0 : -span + (c / (count - 1)) * span * 2;
-        out.push({ type: typeCycle[t++ % typeCycle.length], pos: { x, y: 0, z } });
-      }
-    }
-    return out;
-  }
-
-  _vShape(typeCycle) {
-    const out = [];
-    const arm = 5;
-    const spread = 12; // tightened from 14 so edge units stay in player reach
-    let t = 0;
-    for (let i = 0; i < arm; i++) {
-      const x = -spread + i * (spread / (arm - 1));
-      const z = BOUNDS.FORMATION_Z_MAX - i * 1.2;
-      out.push({ type: typeCycle[t++ % typeCycle.length], pos: { x, y: 0, z } });
-    }
-    out.push({ type: typeCycle[t++ % typeCycle.length], pos: { x: 0, y: 0, z: BOUNDS.FORMATION_Z_MIN } });
-    for (let i = 1; i < arm; i++) {
-      const x = i * (spread / (arm - 1));
-      const z = BOUNDS.FORMATION_Z_MAX - i * 1.2;
-      out.push({ type: typeCycle[t++ % typeCycle.length], pos: { x, y: 0, z } });
-    }
-    return out;
-  }
-
-  _twinColumns(typeCycle) {
-    const out = [];
-    const h = 6;
-    let t = 0;
-    for (const side of [-1, 1]) {
-      for (let i = 0; i < h; i++) {
-        const z = BOUNDS.FORMATION_Z_MIN - i * 2;
-        out.push({ type: typeCycle[t++ % typeCycle.length], pos: { x: side * 9, y: 0, z } });
-      }
-    }
-    return out;
-  }
-
-  _ring(count, typeCycle) {
-    const out = [];
-    const rx = 12; // tightened from 13
-    const rz = 7;
-    let t = 0;
-    for (let i = 0; i < count; i++) {
-      const a = (i / count) * Math.PI * 2;
-      const x = Math.cos(a) * rx;
-      const z = BOUNDS.FORMATION_Z_MIN + Math.sin(a) * rz;
-      out.push({ type: typeCycle[t++ % typeCycle.length], pos: { x, y: 0, z } });
-    }
-    return out;
-  }
-
-  _grid(wave) {
-    const out = [];
-    const rows = Math.min(5, 2 + Math.floor(wave / 2));
-    const cols = Math.min(7, 4 + Math.floor(wave / 3));
-    const types = ['fighter', 'interceptor', 'heavy', 'elite'];
-    let t = 0;
-    for (let r = 0; r < rows; r++) {
+      const tRatio = rows === 1 ? 0 : r / (rows - 1);
+      const z = zNear + (zFar - zNear) * tRatio;
+      // row width: same world-space width across rows so the
+      // row looks uniform; perspective makes the far row render
+      // narrower and smaller, just like in the reference art.
+      const span = (cols - 1) * gap;
+      const rowType = typeCycle[r % typeCycle.length];
       for (let c = 0; c < cols; c++) {
-        const x = -14 + c * (28 / (cols - 1));
-        const z = BOUNDS.FORMATION_Z_MAX - r * 2.5;
-        // center of the grid gets the tougher types
-        const centerBias = 1 - Math.abs(c - (cols - 1) / 2) / (cols / 2);
-        const pick = types[Math.min(types.length - 1, Math.floor((t + centerBias * 3) * 0.7) % types.length)];
-        out.push({ type: pick, pos: { x, y: 0, z } });
-        t++;
+        const x = -span / 2 + c * gap;
+        out.push({ type: rowType, pos: { x, y: 0, z } });
       }
     }
     return out;
@@ -179,7 +140,10 @@ export class WaveSystem {
 
   get isComplete() {
     if (!this.active) return true;
-    if (this._isBossWave) return false; // boss handled separately
+    if (this._isBossWave) {
+      // Boss wave: both the boss AND every escort must be dead.
+      return this._bossDead && this._spawnQueue.length === 0 && this._aliveCount === 0;
+    }
     // A wave is only complete when the spawner plan is EXHAUSTED and
     // every enemy that was spawned is dead. Previously only the
     // alive-count was checked, so a fast player could "clear" a wave
@@ -233,6 +197,7 @@ export class WaveSystem {
     this._spawnedCount = 0;
     this._aliveCount = 0;
     this._isBossWave = false;
+    this._bossDead = true;
   }
 
   _spawnPair(game, slots) {

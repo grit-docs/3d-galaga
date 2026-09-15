@@ -81,6 +81,20 @@ export class ExplosionEffect {
     this._emitBurst(pos, 0xffffff, 22, 20, 6, 0.4, 1);
   }
 
+  /** Ship totally destroyed (life lost) — big fiery debris explosion. */
+  playerDestroyed(pos) {
+    this._flash.position.copy(pos);
+    this._flashTimer = FLASH_DURATION;
+    this._flash.visible = true;
+    this._flash.intensity = FLASH_STRENGTH * 2.2;
+    // fire/orange hull chunks flying out — reads as the ship tearing apart
+    this._emitBurst(pos, 0xff7a2a, 22, 46, 11, 1.0, 2.6);
+    // cyan energy from the engine/core
+    this._emitBurst(pos, 0x33d6ff, 18, 30, 8, 0.75, 2.0);
+    // white-hot sparks for the impact flash
+    this._emitBurst(pos, 0xffffff, 30, 24, 6, 0.5, 1.2);
+  }
+
   update(dt) {
     if (this._flashTimer > 0) {
       this._flashTimer -= dt;

@@ -150,7 +150,6 @@ export class Game {
     // ctx.spawn*. They forward to ProjectileSystem internally, so
     // callers don't need to know the shape of ProjectileSystem.opts.
     ctx.spawnPlayerShot = (opts) => ctx.projectiles.spawnPlayerShot(opts);
-    ctx.spawnPlayerShotFromDrone = (opts) => ctx.projectiles.spawnPlayerShotFromDrone(opts);
     // B4: single canonical shape { origin, dir, speed, damage, scale }
     // across every caller (Enemy / Boss / any future system).
     ctx.spawnEnemyShot = (opts) => ctx.projectiles.spawnEnemyShot(opts);
@@ -413,19 +412,33 @@ export class Game {
   }
 
   _onPlayerHit(dmg) {
-    const result = this._context.player.takeDamage(dmg);
+    const p = this._context.player;
+    const result = p.takeDamage(dmg);
     if (result === false) return; // invulnerable
     this.combo = 0;
     this.hud.setCombo(1);
     this.audio.play('playerHit');
-    this._explosion.playerHit(this._context.player.group.position);
     this._cameraFx.addShake(0.5);
-    this.hud.setShield(this._context.player.shield / PLAYER.MAX_SHIELD);
-    this.hud.setLife(this._context.player.lives);
+    this.hud.setShield(p.shield / PLAYER.MAX_SHIELD);
+    this.hud.setLife(p.lives);
+
+    if (result === 'lostLife') {
+      // Ship destroyed: debris burst at the craft, wipe collected items,
+      // then respawn centered (invulnerability flash set in takeDamage).
+      this._explosion.playerDestroyed(p.group.position);
+      this._cameraFx.addShake(1.0);
+      p.resetCollected();
+      p.group.position.x = 0;
+      p.velocityX = 0;
+      this.hud.setWeaponLevel(p.weaponLevel);
+      this.hud.setTimedBuff(p.rapidLevel > 0, p.rapidLevel);
+    } else if (result === 'hit') {
+      this._explosion.playerHit(p.group.position);
+    }
 
     if (result === 'dead') {
-      // Big death explosion, then the game-over panel.
-      this._explosion.big(this._context.player.group.position, 0x66d9ff);
+      // Final destruction, then the game-over panel.
+      this._explosion.big(p.group.position, 0x66d9ff);
       this._cameraFx.addShake(1.0);
       this.state.transition(States.GAME_OVER);
     }
@@ -440,16 +453,14 @@ export class Game {
     if (type === 'WEAPON') p.upgradeWeapon();
     else if (type === 'SHIELD') p.heal(POWERUP.SHIELD_AMOUNT);
     else if (type === 'Rapid') p.grantRapid();
-    else if (type === 'PIERCE') p.grantPierce();
-    else if (type === 'DRONE') p.grantDrone(2);
     this.hud.setWeaponLevel(p.weaponLevel);
     this.hud.setShield(p.shield / PLAYER.MAX_SHIELD);
-    this.hud.setTimedBuff(p.hasRapid, p.hasPierce);
+    this.hud.setTimedBuff(p.rapidLevel > 0, p.rapidLevel);
     this._explosion.small(at, 0x5cf2ff);
   }
 
   _powerupLabel(type) {
-    return { WEAPON: 'WEAPON UP', SHIELD: 'SHIELD+', Rapid: 'RAPID', PIERCE: 'PIERCE', DRONE: 'DRONE+' }[type];
+    return { WEAPON: 'WEAPON UP', SHIELD: 'SHIELD+', Rapid: 'RAPID+' }[type];
   }
 
   _onBossKilled(boss, at) {
@@ -480,9 +491,19 @@ export class Game {
       type: 'SHIELD',
       fallSpeed: POWERUP.FALL_SPEED,
     });
-    this._waveClearTimer = WAVE_CFG.WAVE_CLEAR_TIME;
-    this.state.transition(States.WAVE_CLEAR);
-    this.hud.showWaveClear(this.waveSystem.wave + 1);
+    // Set the boss-dead flag so WaveSystem.isComplete only fires once
+    // every escort has also been wiped out.
+    this.waveSystem.bossDied();
+
+    // If escorts remain, keep PLAYING — the wave will transition to
+    // WAVE_CLEAR via the normal _onEnemyKilled isComplete check once
+    // the last escort dies.  If there are no escorts, clear immediately.
+    if (this.waveSystem.isComplete) {
+      this._waveClearTimer = WAVE_CFG.WAVE_CLEAR_TIME;
+      this.state.transition(States.WAVE_CLEAR);
+      this.hud.showWaveClear(this.waveSystem.wave + 1);
+      this.audio.play('waveClear');
+    }
   }
 
   _togglePause() {
@@ -554,10 +575,9 @@ export class Game {
 
     // PLAYING / WAVE_CLEAR / BOSS_INTRO
     const playing = s === States.PLAYING;
-    // The player keeps full control during the wave-clear lull too:
-    // lingering enemies/shot stay live, so the ship must be able to
-    // dodge (and keep firing) until the next wave starts.
-    const controlled = playing || s === States.WAVE_CLEAR;
+    // The player keeps full control during WAVE_CLEAR lull AND during
+    // BOSS_INTRO (the 1.5s cinematic) so they can position and fire.
+    const controlled = playing || s === States.WAVE_CLEAR || s === States.BOSS_INTRO;
 
     // player
     const prevDash = this._prevDashTimer ?? 0;
@@ -570,8 +590,6 @@ export class Game {
       this._cameraFx.addShake(0.12);
     }
     this._prevDashTimer = ctx.player.dashTimer;
-    // drones orbit
-    this._updateDrones(dt);
 
     // firing — one shared cadence for auto & manual: a shot leaves only
     // when the cooldown has elapsed, then the cooldown resets to one
@@ -664,7 +682,7 @@ export class Game {
       this.hud.setShield(ctx.player.shield / PLAYER.MAX_SHIELD);
       this.hud.setLife(ctx.player.lives);
       this.hud.setWeaponLevel(ctx.player.weaponLevel);
-      this.hud.setTimedBuff(ctx.player.hasRapid, ctx.player.hasPierce);
+      this.hud.setTimedBuff(ctx.player.rapidLevel > 0, ctx.player.rapidLevel);
       this.hud.setCombo(Math.max(1, Math.min(10, Math.floor(this.combo) + 1)));
     }
 
@@ -688,18 +706,19 @@ export class Game {
     const p = this._context.player;
     const origin = p.group.position;
     const count = stats.count;
-    const spread = stats.spread;
+    // Fan the barrels so the side shots fire FROM the wing guns at the tips
+    // of the plane (x=±1.95, where the wing barrels sit), not floating
+    // outside the silhouette or stacked on the nose. For 3 shots the
+    // outer barrels land exactly on the wing-gun tips; for 2, a tight
+    // inboard pair. Shots still fly dead-straight (angle 0).
+    const mid = (count - 1) / 2;
+    const spacing = 1.95; // world units between adjacent barrels (= wing tip)
     for (let i = 0; i < count; i++) {
-      const angle = (i - (count - 1) / 2) * spread;
-      const from = new THREE.Vector3(origin.x + Math.sin(angle) * 0.9, origin.y, origin.z - 0.4);
-      this._context.projectiles.spawnPlayerShot({ origin: from, angle, stats });
+      const xOff = (i - mid) * spacing;
+      const from = new THREE.Vector3(origin.x + xOff, origin.y, origin.z - 0.4);
+      this._context.projectiles.spawnPlayerShot({ origin: from, angle: 0, stats });
     }
-    // side drones
-    for (let i = 0; i < p.drones; i++) {
-      const side = i % 2 === 0 ? 1 : -1;
-      const from = new THREE.Vector3(origin.x + side * 2.2, origin.y + 0.2, origin.z);
-      this._context.projectiles.spawnPlayerShotFromDrone({ origin: from, angle: 0, stats });
-    }
+    // TOTAL shots = weapon COUNTS (max 3) — no extra drone fire (removed).
     this._muzzleFlash(origin);
   }
 
@@ -726,44 +745,6 @@ export class Game {
   // (see the clamp block), so no per-shot kick is needed here.
   _muzzleKick() {
     // intentionally a no-op — visual punch is provided by muzzleFlash.
-  }
-
-  _updateDrones(dt) {
-    const p = this._context.player;
-    if (p.drones <= 0) {
-      if (this._droneGroup) this._droneGroup.visible = false;
-      return;
-    }
-    if (!this._droneGroup) this._initDrones();
-    this._droneAngle = (this._droneAngle ?? 0) + dt * 2.2;
-    const g = p.group.position;
-    const r = 2.2;
-    for (let i = 0; i < p.drones; i++) {
-      const a = this._droneAngle + (i * Math.PI * 2) / p.drones;
-      this._drones[i].position.set(
-        g.x + Math.cos(a) * r,
-        g.y - 0.1,
-        g.z + Math.sin(a) * r * 0.4  // slightly flattened ellipse
-      );
-    }
-    this._droneGroup.visible = true;
-  }
-
-  _initDrones() {
-    const mat = new THREE.MeshStandardMaterial({
-      color: 0x0a1a30,
-      emissive: COLORS.PLAYER_LASER,
-      emissiveIntensity: 1.8,
-    });
-    const geo = new THREE.SphereGeometry(0.18, 6, 4);
-    this._droneGroup = new THREE.Group();
-    this._drones = [];
-    for (let i = 0; i < 2; i++) {
-      const m = new THREE.Mesh(geo, mat);
-      this._droneGroup.add(m);
-      this._drones.push(m);
-    }
-    this._context.scene.add(this._droneGroup);
   }
 
   // ----------------------------------------------------------------

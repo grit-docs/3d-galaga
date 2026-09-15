@@ -19,7 +19,7 @@ export const GAME = {
 export const BOUNDS = {
   PLAYER_MIN_X: -18,
   PLAYER_MAX_X: 18,
-  PLAYER_Y: 0.6,
+  PLAYER_Y: 1.1,
   PLAYER_Z: 17,
 
   FORMATION_Z_MIN: -34,
@@ -59,8 +59,11 @@ export const WEAPON = {
   // cooldown (1/FIRE_RATE) has elapsed, so rapid tapping can't outrun the 
   // cadence. Base: 2 shots/sec (1 per 0.5s). The RAPID buff adds
   // RAPID_BONUS for its duration (2.0 -> 2.5 sps, i.e. 0.5s -> 0.4s).
-  FIRE_RATE: 2.0, // shots per second, base
-  RAPID_BONUS: 0.5, // extra shots/sec while the RAPID buff is up
+  FIRE_RATE: 2.0, // shots per second, base (permanent)
+  // RAPID now stacks PERMANENTLY: each Rapid pickup adds one level (capped
+  // at RAPID_MAX_LEVEL), and each level adds RAPID_RATE_PER_LEVEL to the rate.
+  RAPID_RATE_PER_LEVEL: 0.4,
+  RAPID_MAX_LEVEL: 3,
   // Base single-shot laser
   PROJECTILE_SPEED: 52,
   DAMAGE: 10,
@@ -73,7 +76,6 @@ export const WEAPON = {
   SPEED_BONUS: [0, 0, 4, 8, 12],
   DMG_BONUS: [0, 5, 5, 10, 12],
   MAX_LEVEL: 5,
-  MAX_DRONES: 2,
 };
 
 export const SCORE_VALUES = {
@@ -143,7 +145,7 @@ export const WAVE = {
 export const BOSS = {
   HP: 820,
   HP_SCALE: 450, // extra HP per boss cycle
-  RADIUS: 6.5, // x/z collision radius — tuned to the 1.2x-scaled visual hull
+  RADIUS: 12.675, // x/z collision radius — tuned to the 2.34x-scaled visual hull (8.45 x 1.5)
   Z: -50,
   INTRO_TIME: 2.6,
   // Boss.js reads BOSS.BOSS_EVERY — keep a local copy so the boss
@@ -156,8 +158,9 @@ export const POWERUP = {
   FALL_SPEED: 7.5,
   CHANCE: 0.22,
   SHIELD_AMOUNT: 45,
-  TYPES: ['WEAPON', 'Rapid', 'PIERCE', 'DRONE', 'SHIELD'],
-  RARITY: [0.32, 0.2, 0.14, 0.14, 0.2],
+  // PIERCE and DRONE removed on request — remaining pickups only.
+  TYPES: ['WEAPON', 'Rapid', 'SHIELD'],
+  RARITY: [0.35, 0.3, 0.35],
 };
 
 export const CAMERA = {
@@ -189,29 +192,33 @@ export const COLORS = {
   SCORE_FLOAT_TEXT: '#bfe9ff',
 
   ENEMIES: {
+    // Fluorescent insect palette (reference art): each bug type is a
+    // distinct neon hue — body + wings both glow in that color, with a
+    // bright contrasting "eye" core. fighter=green, interceptor=purple,
+    // heavy=orange, elite=teal.
     fighter: {
-      hull: 0x4a2452,
-      wing: 0x6d2f78,
-      core: 0xffc24d,
-      glow: 0xff9a2a,
+      hull: 0x2fd63a,
+      wing: 0x5dff4e,
+      core: 0xffe14d,
+      glow: 0x66ff55,
     },
     interceptor: {
-      hull: 0x153f63,
-      wing: 0x1f5f95,
-      core: 0x7dff9a,
-      glow: 0x2ee6a0,
+      hull: 0x9a45ff,
+      wing: 0xb866ff,
+      core: 0xffd23d,
+      glow: 0xc07bff,
     },
     heavy: {
-      hull: 0x4d3a16,
-      wing: 0x7a5a1f,
-      core: 0xff7b3a,
-      glow: 0xff5a1f,
+      hull: 0xff9a1f,
+      wing: 0xffb53d,
+      core: 0xff4444,
+      glow: 0xffb53d,
     },
     elite: {
-      hull: 0x2a1440,
-      wing: 0x5420a0,
-      core: 0xff3df0,
-      glow: 0xd400ff,
+      hull: 0x18d8c8,
+      wing: 0x2ff0dc,
+      core: 0xff5df0,
+      glow: 0x4dffe0,
     },
   },
   BOSS: {

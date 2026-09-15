@@ -134,18 +134,25 @@ html, body {
   letter-spacing: 1px;
 }
 
-/* top bar */
+/* top bar: score cluster left, wave cluster right (Galaga layout) */
 .hud-top {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: flex-start;
   gap: 12px;
-  padding: 14px 18px;
+  padding: 16px 22px;
   pointer-events: none;
 }
+.hud-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.hud-group-right { justify-content: flex-end; }
 .hud-cell {
   position: relative;
   display: flex;
@@ -181,37 +188,44 @@ html, body {
   color: var(--ink-dim);
   letter-spacing: 4px;
 }
+/* label accents per reference art: SCORE cyan, HIGH SCORE gold */
+.hud-cell:has(.hud-value.score) .hud-label {
+  color: var(--neon);
+  text-shadow: 0 0 8px rgba(45, 226, 255, 0.45);
+}
+.hud-cell:has(.hud-value.high) .hud-label {
+  color: var(--neon2);
+  text-shadow: 0 0 8px rgba(255, 210, 61, 0.35);
+}
 .hud-value {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--ink);
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
   text-shadow: 0 0 12px rgba(45, 226, 255, 0.3);
 }
+.hud-value.score,
+.hud-value.wave {
+  color: #f2fbff;
+}
 .hud-value.hot {
   color: var(--neon);
   text-shadow: 0 0 16px var(--glow);
 }
-.hud-value.life {
-  font-family: var(--font-mono);
-  font-size: 15px;
-  letter-spacing: 3px;
-  color: var(--neon);
-}
 
-/* bottom bar */
+/* bottom bar: shield + weapon left / lives right */
 .hud-bottom {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: flex-end;
   gap: 12px;
-  padding: 14px 18px;
+  padding: 16px 22px;
   pointer-events: none;
 }
 .hud-bottom .hud-cell {
@@ -226,6 +240,45 @@ html, body {
 }
 .hud-bottom .hud-cell::before,
 .hud-bottom .hud-cell::after { top: auto; bottom: 0; }
+
+/* bottom bar: compact sizing so the panels do not crowd the player ship */
+.hud-bottom { padding: 10px 16px; }
+.hud-bottom .hud-cell { padding: 5px 12px 6px; gap: 7px; }
+.hud-bottom .hud-label { font-size: 8px; letter-spacing: 3px; }
+.hud-bottom .hud-value { font-size: 17px; }
+.hud-bottom .hearts { gap: 5px; }
+.hud-bottom .hearts svg { width: 15px; height: 15px; }
+.hud-bottom .bar-track { width: 132px; height: 9px; }
+.hud-bottom .shield-track { width: 188px; }
+.shield-pct {
+  color: #f2fbff;
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* lives: neon hearts (filled = alive, hollow = lost) */
+.hearts {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.hearts svg {
+  width: 21px;
+  height: 21px;
+  fill: var(--danger);
+  filter: drop-shadow(0 0 7px rgba(255, 93, 143, 0.75));
+  transition: opacity 0.25s ease, filter 0.25s ease, transform 0.25s ease;
+}
+.hearts svg.lost {
+  fill: rgba(255, 93, 143, 0.10);
+  stroke: rgba(255, 93, 143, 0.38);
+  stroke-width: 1.4;
+  filter: none;
+  transform: scale(0.86);
+}
+
 .weapon-cell { flex-wrap: wrap; max-width: 300px; }
 
 .hud-buff {
@@ -256,12 +309,13 @@ html, body {
     linear-gradient(180deg, rgba(4, 10, 20, 0.9), rgba(4, 10, 20, 0.5)),
     repeating-linear-gradient(90deg, transparent 0 8px, rgba(45,226,255,0.08) 8px 9px);
 }
-.shield-track { width: 200px; }
+.shield-track { width: 264px; }
 .bar-fill {
   height: 100%;
   width: 100%;
+  /* cyan core warming to orange at the leading edge (ref. art) */
   background:
-    linear-gradient(90deg, #1a7f96 0%, var(--neon) 70%, #a8f4ff 100%);
+    linear-gradient(90deg, #0e6f86 0%, var(--neon) 45%, #d9faff 74%, #ffd23d 92%, #ff8a3d 100%);
   box-shadow: 0 0 14px var(--glow);
   transition: width 0.12s linear, background 0.3s ease;
   position: relative;
@@ -701,8 +755,8 @@ kbd {
 .tc-stick {
   pointer-events: auto;
   position: relative;
-  width: 140px;
-  height: 140px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
   background: radial-gradient(circle at 50% 42%, rgba(45, 226, 255, 0.12), rgba(7, 16, 32, 0.5) 72%);
   border: 1px solid var(--panel-line);
@@ -715,9 +769,9 @@ kbd {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 58px;
-  height: 58px;
-  margin: -29px 0 0 -29px;
+  width: 29px;
+  height: 29px;
+  margin: -14.5px 0 0 -14.5px;
   border-radius: 50%;
   background: radial-gradient(circle at 40% 34%, #aef6ff, #2de2ff 55%, #0c7ca6);
   box-shadow: 0 0 18px var(--glow), 0 0 44px rgba(45, 226, 255, 0.35);
@@ -729,8 +783,8 @@ kbd {
 
 .tc-fire {
   pointer-events: auto;
-  width: 100px;
-  height: 100px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -739,9 +793,9 @@ kbd {
   background: radial-gradient(circle at 50% 38%, rgba(255, 93, 143, 0.24), rgba(20, 8, 16, 0.55) 75%);
   color: var(--danger);
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
   text-shadow: 0 0 10px rgba(255, 93, 143, 0.7);
   box-shadow: 0 0 26px rgba(255, 93, 143, 0.25), inset 0 0 18px rgba(255, 93, 143, 0.12);
   touch-action: none;
@@ -757,11 +811,14 @@ kbd {
 
 /* ---- responsive ----------------------------------------------------------- */
 @media (max-width: 720px) {
-  .hud-top { flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .hud-top { gap: 8px; padding: 10px 12px; }
+  .hud-group { gap: 8px; }
   .hud-bottom { flex-wrap: wrap; justify-content: center; gap: 8px; }
-  .hud-cell { min-width: 70px; padding: 5px 12px; }
+  .hud-cell { min-width: 64px; padding: 5px 12px; }
   .hud-value { font-size: 17px; }
   .bar-track, .shield-track { width: 120px; }
+  .hearts svg { width: 15px; height: 15px; }
+  .hearts { gap: 5px; }
   .overlay-card { padding: 30px 24px; min-width: 0; }
   .title { font-size: 34px; letter-spacing: 8px; }
   .subtitle { letter-spacing: 6px; }
@@ -779,59 +836,68 @@ kbd {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
-    padding-top: calc(8px + env(safe-area-inset-top, 0px));
+    gap: 2px;
+    padding-top: calc(5px + env(safe-area-inset-top, 0px));
+    /* uniform shrink: everything renders at ~80% of the coarse size */
+    font-size: 12px;
   }
 
-  /* ---- top bar (SCORE/HIGH/WAVE/COMBO), ~half size ---- */
+  /* ---- top bar (SCORE/HIGH left, WAVE/COMBO right), compact ---- */
   .hud-top {
     position: static;
-    gap: 6px;
-    padding: 0;
+    width: 100%;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 0 6px;
   }
+  .hud-group { gap: 4px; }
   .hud-top .hud-cell {
     min-width: 0;
     gap: 1px;
-    padding: 3px 10px 4px;
+    padding: 2px 7px 3px;
   }
   .hud-top .hud-cell::before,
-  .hud-top .hud-cell::after { width: 8px; }
-  .hud-top .hud-label { font-size: 7px; letter-spacing: 2px; }
-  .hud-top .hud-value { font-size: 12px; line-height: 1.1; }
+  .hud-top .hud-cell::after { width: 6px; box-shadow: none; }
+  .hud-top .hud-label { font-size: 6px; letter-spacing: 1px; }
+  .hud-top .hud-value { font-size: 11px; line-height: 1.05; }
 
-  /* ---- bottom bar (WEAPON/SHIELD/LIFE), right below the top bar ---- */
+  /* ---- bottom bar (SHIELD/WEAPON left, LIVES right), compact ---- */
   .hud-bottom {
     position: static;
     left: auto;
     right: auto;
     bottom: auto;
     transform: none;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 6px;
-    padding: 0;
-    max-width: calc(100vw - 8px);
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    gap: 4px;
+    padding: 0 6px;
   }
   .hud-bottom .hud-cell {
     min-width: 0;
     flex: 0 1 auto;
-    gap: 5px;
-    padding: 3px 10px 4px;
+    gap: 4px;
+    padding: 2px 7px 3px;
   }
   .hud-bottom .hud-cell::before,
-  .hud-bottom .hud-cell::after { width: 8px; }
-  .hud-bottom .hud-label { font-size: 7px; letter-spacing: 2px; }
-  .hud-bottom .hud-value { font-size: 12px; line-height: 1.1; }
-  .hud-bottom .hud-value.life { font-size: 10px; letter-spacing: 1px; }
+  .hud-bottom .hud-cell::after { width: 6px; box-shadow: none; }
+  .hud-bottom .hud-label { font-size: 6px; letter-spacing: 1px; }
+  .hud-bottom .hud-value { font-size: 11px; line-height: 1.05; }
   .hud-bottom .bar-track,
-  .hud-bottom .shield-track { width: 36px; height: 7px; }
+  .hud-bottom .shield-track { width: 64px; height: 6px; }
   .hud-bottom .weapon-cell { max-width: none; flex-wrap: nowrap; }
+  .hearts { gap: 2px; }
+  .hearts svg { width: 10px; height: 10px; }
+  .shield-pct { font-size: 7px; }
   /* summary mode: hide temporary buff chips to keep a single tight line */
   .hud-bottom .hud-buff { display: none; }
 
   /* boss bar clears the stacked bars at the top */
-  #boss-bar { top: 92px; }
+  #boss-bar { top: 62px; }
+  #boss-bar .bar-track { height: 9px; }
+  .boss-label, .boss-phase { font-size: 9px; }
 }
 
 /* ---- reduced motion ------------------------------------------------------- */

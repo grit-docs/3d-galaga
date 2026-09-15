@@ -9,6 +9,15 @@
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
+    <!-- shared icon symbols (hearts) -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <defs>
+        <symbol id="heart" viewBox="0 0 24 24">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </symbol>
+      </defs>
+    </svg>
+
     <div id="game-root">
       <!-- the WebGL/WebGPU canvas is appended here by Renderer.js -->
       <div id="boot-fallback" hidden>
@@ -21,23 +30,27 @@
          reach the game; buttons re-enable pointer-events. FloatingText
          score popups (.score-float) are appended here by the engine. -->
     <div id="hud">
-      <!-- top bar -->
+      <!-- top bar: score cluster left / wave cluster right -->
       <div class="hud-top">
-        <div class="hud-cell">
-          <span class="hud-label">SCORE</span>
-          <span class="hud-value" data-hud="#score">0</span>
+        <div class="hud-group hud-group-left">
+          <div class="hud-cell">
+            <span class="hud-label">SCORE</span>
+            <span class="hud-value score" data-hud="#score">0</span>
+          </div>
+          <div class="hud-cell">
+            <span class="hud-label">HIGH SCORE</span>
+            <span class="hud-value high" data-hud="#highScore">0</span>
+          </div>
         </div>
-        <div class="hud-cell">
-          <span class="hud-label">HIGH</span>
-          <span class="hud-value" data-hud="#highScore">0</span>
-        </div>
-        <div class="hud-cell">
-          <span class="hud-label">WAVE</span>
-          <span class="hud-value" data-hud="#wave">1</span>
-        </div>
-        <div class="hud-cell">
-          <span class="hud-label">COMBO</span>
-          <span class="hud-value" data-hud="#combo">x1</span>
+        <div class="hud-group hud-group-right">
+          <div class="hud-cell wave-cell">
+            <span class="hud-label">WAVE</span>
+            <span class="hud-value wave" data-hud="#wave">1</span>
+          </div>
+          <div class="hud-cell combo-cell" id="comboCell" style="visibility:hidden">
+            <span class="hud-label">COMBO</span>
+            <span class="hud-value hot" data-hud="#combo">x1</span>
+          </div>
         </div>
       </div>
 
@@ -50,23 +63,30 @@
         <span class="boss-phase" data-hud="#bossPhase">PHASE 1</span>
       </div>
 
-      <!-- bottom bar -->
+      <!-- bottom bar: shield + weapon left / lives right -->
       <div class="hud-bottom">
-        <div class="hud-cell weapon-cell">
-          <span class="hud-label">WEAPON</span>
-          <span class="hud-value" data-hud="#weapon">LV 1</span>
-          <span class="hud-buff" data-hud="#rapid" style="display:none">RAPID</span>
-          <span class="hud-buff" data-hud="#pierce" style="display:none">PIERCE</span>
-        </div>
-        <div class="hud-cell shield-cell">
-          <span class="hud-label">SHIELD</span>
-          <div class="bar-track shield-track">
-            <div class="bar-fill shield-fill" data-hud="#shieldFill"></div>
+        <div class="hud-group hud-group-left">
+          <div class="hud-cell shield-cell">
+            <span class="hud-label">SHIELD: <b class="shield-pct" data-hud="#shieldPct">100%</b></span>
+            <div class="bar-track shield-track">
+              <div class="bar-fill shield-fill" data-hud="#shieldFill"></div>
+            </div>
+          </div>
+          <div class="hud-cell weapon-cell">
+            <span class="hud-label">WEAPON</span>
+            <span class="hud-value" data-hud="#weapon">LV 1</span>
+            <span class="hud-buff" data-hud="#rapid" style="display:none">RAPID</span>
           </div>
         </div>
-        <div class="hud-cell life-cell">
-          <span class="hud-label">LIFE</span>
-          <span class="hud-value life" data-hud="#life">&#9670; &#9670; &#9670;</span>
+        <div class="hud-group hud-group-right">
+          <div class="hud-cell life-cell">
+            <span class="hud-label">LIVES</span>
+            <span class="hearts" data-hud="#life">
+              <svg viewBox="0 0 24 24"><use href="#heart"/></svg>
+              <svg viewBox="0 0 24 24"><use href="#heart"/></svg>
+              <svg viewBox="0 0 24 24"><use href="#heart"/></svg>
+            </span>
+          </div>
         </div>
       </div>
 

@@ -6,7 +6,7 @@
  * - Bank / lean into turns, ease back to level.
  * - Dash with invulnerability + cooldown.
  * - Shield / life management, brief hit invulnerability.
- * - Weapon state (level, pierce, drones, rapid) used by the
+ * - Weapon state (level, rapid) used by the
  *   ProjectileSystem to decide what to spawn.
  * Owns its own 3D group; systems read/write its state.
  * ---------------------------------------------------------------
@@ -23,11 +23,10 @@ export class Player {
   constructor() {
     this.group = buildPlayerShip();
     this.group.name = 'player';
-    // Visual size: 0.7 (the requested 30% reduction) × 0.9 (a further 10%)
-    // = 0.63 of the original hull. Collision radius (`this.radius`, 1.35)
-    // stays unchanged so a smaller sprite doesn't silently change hit
-    // fairness — the ship just LOOKS smaller.
-    this.group.scale.setScalar(0.63);
+    // Visual size: 0.63 (base) × 0.9 × 0.9 (two further 10% reductions)
+    // = 0.5103 of the original hull. The collision radius (`this.radius`)
+    // is scaled down with the hull so the hitbox matches the sprite.
+    this.group.scale.setScalar(0.63 * 0.9 * 0.9);
 
     this.velocityX = 0;
     this.alive = true;
@@ -43,16 +42,14 @@ export class Player {
 
     // weapon upgrades
     this.weaponLevel = 1;
-    this.hasPierce = false;
-    this.pierceTimer = 0;
-    this.hasRapid = false;
-    this.rapidTimer = 0;
-    this.drones = 0;
+    this.rapidLevel = 0; // permanent Rapid stack (cap: WEAPON.RAPID_MAX_LEVEL)
 
     this._collectEngines();
 
     this._t = 0;
-    this.radius = 1.35;
+    // 1.35 base x 0.9 (this request's 10% reduction) = 1.215, matching the
+    // shrunk visual hull.
+    this.radius = 1.35 * 0.9;
   }
 
   _collectEngines() {
@@ -77,11 +74,7 @@ export class Player {
     this.dashCooldown = 0;
     this.dashDir = 0;
     this.weaponLevel = 1;
-    this.hasPierce = false;
-    this.pierceTimer = 0;
-    this.hasRapid = false;
-    this.rapidTimer = 0;
-    this.drones = 0;
+    this.rapidLevel = 0;
   }
 
   get position() {
@@ -96,10 +89,9 @@ export class Player {
       spread: WEAPON.SPREAD[i],
       baseSpeed: WEAPON.PROJECTILE_SPEED + WEAPON.SPEED_BONUS[i],
       baseDamage: WEAPON.DAMAGE + WEAPON.DMG_BONUS[i],
-      baseRate: WEAPON.FIRE_RATE + (this.hasRapid ? WEAPON.RAPID_BONUS : 0),
-      rapid: this.hasRapid,
-      pierce: this.hasPierce,
-      drones: this.drones,
+      baseRate: WEAPON.FIRE_RATE + this.rapidLevel * WEAPON.RAPID_RATE_PER_LEVEL,
+      rapid: this.rapidLevel > 0,
+      rapidLevel: this.rapidLevel,
     };
   }
 
@@ -114,14 +106,6 @@ export class Player {
     // --- timers -------------------------------------------------
     if (this.invulnTimer > 0) this.invulnTimer -= dt;
     if (this.dashCooldown > 0) this.dashCooldown -= dt;
-    if (this.pierceTimer > 0) {
-      this.pierceTimer -= dt;
-      if (this.pierceTimer <= 0) this.hasPierce = false;
-    }
-    if (this.rapidTimer > 0) {
-      this.rapidTimer -= dt;
-      if (this.rapidTimer <= 0) this.hasRapid = false;
-    }
 
     if (!this.alive) return;
 
@@ -196,7 +180,7 @@ export class Player {
     if (this.invulnTimer > 0 || !this.alive) return false;
     this.shield -= amount;
     if (this.shield <= 0) {
-      // lose a life
+      // lose a life (ship destroyed)
       this.lives -= 1;
       this.shield = PLAYER.MAX_SHIELD;
       this.invulnTimer = PLAYER.INVULN_TIME;
@@ -206,6 +190,7 @@ export class Player {
         this.group.visible = false;
         return 'dead';
       }
+      return 'lostLife';
     }
     return 'hit';
   }
@@ -216,18 +201,15 @@ export class Player {
     this.shield = Math.max(0, Math.min(PLAYER.MAX_SHIELD, this.shield + amount));
   }
 
-  grantPierce() {
-    this.hasPierce = true;
-    this.pierceTimer = 15;
-  }
-
+  /** +1 Rapid level (permanent, capped). Each level adds fire rate. */
   grantRapid() {
-    this.hasRapid = true;
-    this.rapidTimer = 12;
+    this.rapidLevel = Math.min(WEAPON.RAPID_MAX_LEVEL, this.rapidLevel + 1);
   }
 
-  grantDrone(max = 2) {
-    this.drones = Math.min(max, this.drones + 1);
+  /** Wipe collected upgrades (weapon + Rapid) — called on ship destruction. */
+  resetCollected() {
+    this.weaponLevel = 1;
+    this.rapidLevel = 0;
   }
 
   upgradeWeapon() {

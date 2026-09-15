@@ -3,10 +3,8 @@
  * ---------------------------------------------------------------
  * Spinning pickup dropped by destroyed enemies.
  * Types (see POWERUP.TYPES in config.js):
- *   WEAPON  - weapon level up
- *   Rapid   - rapid-fire buff (timed)
- *   PIERCE  - piercing shot buff (timed)
- *   DRONE   - +1 orbiting drone
+ *   WEAPON  - weapon level up (permanent)
+ *   Rapid   - rapid-fire level (permanent, stacks to a cap)
  *   SHIELD  - restore shield
  * Pooled; `kill()` hands the object back to the ProjectileSystem pool.
  * ---------------------------------------------------------------
@@ -16,8 +14,6 @@ import * as THREE from 'three/webgpu';
 const ICON_COLORS = {
   WEAPON: 0x5cf2ff,
   Rapid: 0xffd23d,
-  PIERCE: 0x7dff9a,
-  DRONE: 0xc77dff,
   SHIELD: 0x3d8bff,
 };
 
