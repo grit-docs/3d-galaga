@@ -551,7 +551,7 @@ export class Game {
     const s = this.state.current;
 
     // ambient systems that run all the time
-    ctx.starfield.update(dt, s === States.MAIN_MENU ? 0.7 : 1.0);
+    ctx.starfield.update(dt, s === States.MAIN_MENU ? 0.7 : 1.0, ctx.camera);
     this._floatingText.update(dt);
     this._explosion.update(dt);
 
