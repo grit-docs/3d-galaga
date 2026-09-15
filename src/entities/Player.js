@@ -2,8 +2,8 @@
  * Player.js
  * ---------------------------------------------------------------
  * The player craft.
- * - Direct input→velocity lateral movement (instant respond / instant
- *   stop, no acceleration lag or coasting).
+ * - Acceleration based lateral movement with drag (no instant snap);
+ *   acceleration was reduced to half for a softer, less sluggish feel.
  * - Bank / lean into turns, ease back to level.
  * - Dash with invulnerability + cooldown.
  * - Shield / life management, brief hit invulnerability.
@@ -115,11 +115,16 @@ export class Player {
       this.dashTimer -= dt;
       this.velocityX = this.dashDir * PLAYER.DASH_SPEED;
     } else {
-      // Direct input→velocity: full speed while a key/stick is held,
-      // hard stop the instant it is released. (The old accel+drag model
-      // took ~0.3s to reach MAX_SPEED_X and coasted on release, which
-      // felt like being pushed around.)
-      this.velocityX = axis * PLAYER.MAX_SPEED_X;
+      // Accel/drag model (restored, with halved acceleration) — see the
+      // old direct input→version that felt too snappy.
+      const accel = PLAYER.ACCEL_X * dt;
+      this.velocityX += axis * accel;
+      // drag / decel
+      this.velocityX -= this.velocityX * Math.min(1, PLAYER.DRAG * dt);
+      // clamp
+      const max = PLAYER.MAX_SPEED_X;
+      if (this.velocityX > max) this.velocityX = max;
+      else if (this.velocityX < -max) this.velocityX = max;
     }
 
     this.group.position.x += this.velocityX * dt;

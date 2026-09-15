@@ -32,9 +32,10 @@ export const BOUNDS = {
 };
 
 export const PLAYER = {
-  // Lateral movement is direct input→velocity (no accel/drag): holding an
-  // input moves at MAX_SPEED_X, releasing stops instantly.
+  ACCEL_X: 60, // halved from 120 — accel/drag restored for a controlled,
+  // less floaty feel; DRAG 9 pairs with it (steady-state ≈ ACCEL/DRAG)
   MAX_SPEED_X: 34,
+  DRAG: 9,
   BANK_TILT: 0.55,
   BANK_Z: 0.18,
   BANK_LERP: 8,
