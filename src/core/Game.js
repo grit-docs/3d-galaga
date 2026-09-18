@@ -156,7 +156,10 @@ export class Game {
     ctx.spawnPowerUp = (opts) => ctx.projectiles.spawnPowerUp(opts);
 
     ctx.particles = new ParticleSystem(scene, 1400);
-    ctx.starfield = new StarFieldSystem(scene, 2000);
+    // Star count cut ~70% (2000 -> 600) to ease long-session frame cost.
+    // The field is a fixed-size wrap buffer, so fewer stars = less CPU
+    // projection + colour work and fewer additive fragments per frame.
+    ctx.starfield = new StarFieldSystem(scene, 600);
 
     this._explosion = new ExplosionEffect(scene, ctx.particles);
     this._cameraFx = new CameraEffects(this.renderer, camera);
