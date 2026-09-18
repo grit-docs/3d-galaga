@@ -19,6 +19,13 @@ export class ParticleSystem {
     this._max = max;
     this._positions = new Float32Array(max * 3);
     this._colors = new Float32Array(max * 3);
+    // Spawn-time colour, kept separately: the visible colour buffer is
+    // base × (life/maxLife) recomputed each frame. Previously the fade
+    // was MULTIPLIED into the colour buffer every frame, so brightness
+    // decayed exponentially (compounding ~0.98^frames → denormals →
+    // zero) and dead particles kept stale garbage in the buffer, which
+    // was re-uploaded to the GPU every single frame.
+    this._baseColors = new Float32Array(max * 3);
     this._velocities = new Float32Array(max * 3);
     this._life = new Float32Array(max);
     this._maxLife = new Float32Array(max);
@@ -70,9 +77,13 @@ export class ParticleSystem {
     this._velocities[i * 3] = vx;
     this._velocities[i * 3 + 1] = vy;
     this._velocities[i * 3 + 2] = vz;
-    this._colors[i * 3] = this._tempColor.r;
-    this._colors[i * 3 + 1] = this._tempColor.g;
-    this._colors[i * 3 + 2] = this._tempColor.b;
+    this._baseColors[i * 3] = this._tempColor.r;
+    this._baseColors[i * 3 + 1] = this._tempColor.g;
+    this._baseColors[i * 3 + 2] = this._tempColor.b;
+    // spawn fully bright (life just reset to full below)
+    this._colors[i * 3] = this._baseColors[i * 3];
+    this._colors[i * 3 + 1] = this._baseColors[i * 3 + 1];
+    this._colors[i * 3 + 2] = this._baseColors[i * 3 + 2];
     this._life[i] = life;
     this._maxLife[i] = life;
     this._drag[i] = drag;
@@ -91,6 +102,7 @@ export class ParticleSystem {
       if (life <= 0) {
         L[i] = 0;
         P[i * 3 + 1] = OFFSCREEN_Y;
+        this._resetColor(i);
         continue;
       }
       L[i] = life;
@@ -105,19 +117,30 @@ export class ParticleSystem {
       P[i * 3 + 1] += V[i * 3 + 1] * dt;
       P[i * 3 + 2] += V[i * 3 + 2] * dt;
 
+      // derive visible colour from the immutable spawn colour
       const fade = life / this._maxLife[i];
-      C[i * 3] *= fade;
-      C[i * 3 + 1] *= fade;
-      C[i * 3 + 2] *= fade;
+      const i3 = i * 3;
+      C[i3] = this._baseColors[i3] * fade;
+      C[i3 + 1] = this._baseColors[i3 + 1] * fade;
+      C[i3 + 2] = this._baseColors[i3 + 2] * fade;
     }
     this._geometry.attributes.position.needsUpdate = true;
     this._geometry.attributes.color.needsUpdate = true;
+  }
+
+  /** Zero a dead particle's colour so the upload buffer stays clean. */
+  _resetColor(i) {
+    const i3 = i * 3;
+    this._colors[i3] = 0;
+    this._colors[i3 + 1] = 0;
+    this._colors[i3 + 2] = 0;
   }
 
   clear() {
     for (let i = 0; i < this._max; i++) {
       this._life[i] = 0;
       this._positions[i * 3 + 1] = OFFSCREEN_Y;
+      this._resetColor(i);
     }
     this._geometry.attributes.position.needsUpdate = true;
     this._geometry.attributes.color.needsUpdate = true;

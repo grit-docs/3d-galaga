@@ -81,6 +81,10 @@ export class Enemy {
   onRecycle() {
     this.active = false;
     this.dying = false;
+    // Drop the flight curve: each spawn allocates a fresh
+    // CatmullRomCurve3, and holding the old one on the pooled instance
+    // meant curve data (point arrays) accumulated across every wave.
+    this._curve = null;
   }
 
   /** Configure for a wave. */

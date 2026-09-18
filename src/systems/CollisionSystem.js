@@ -31,7 +31,10 @@ export class CollisionSystem {
     const ctx = g._context;
     const projectiles = ctx.projectiles.activeProjectiles;
     const powerups = ctx.projectiles.activePowerups;
-    const enemies = [...g._context.enemyList]; // snapshot: kills splice the live list mid-frame
+    // Iterate the live list directly: this pass only READS enemy state
+    // (kills go through the Game callback, not this loop), so the old
+    // per-frame `[...enemyList]` snapshot was pure GC churn.
+    const enemies = g._context.enemyList;
     const boss = ctx.boss;
     const player = ctx.player;
 
@@ -112,7 +115,7 @@ export class CollisionSystem {
 
     // enemy craft -> player (ram)
     if (player.alive) {
-      for (const e of [...g._context.enemyList]) {
+      for (const e of enemies) {
         if (!e.active || e.dying || !e.isDiving()) continue;
         const ep = e.group.position;
         const plp = player.group.position;

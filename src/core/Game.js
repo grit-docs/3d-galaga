@@ -156,10 +156,11 @@ export class Game {
     ctx.spawnPowerUp = (opts) => ctx.projectiles.spawnPowerUp(opts);
 
     ctx.particles = new ParticleSystem(scene, 1400);
-    // Star count cut ~70% (2000 -> 600) to ease long-session frame cost.
-    // The field is a fixed-size wrap buffer, so fewer stars = less CPU
-    // projection + colour work and fewer additive fragments per frame.
-    ctx.starfield = new StarFieldSystem(scene, 600);
+    // Star count cut to 50: every star costs a per-frame camera
+    // projection (2 matrix multiplies) + trail buffer writes on the
+    // CPU, so long sessions felt the cost. 50 stars still read as a
+    // starfield with the motion trails and keeps the frame cheap.
+    ctx.starfield = new StarFieldSystem(scene, 50);
 
     this._explosion = new ExplosionEffect(scene, ctx.particles);
     this._cameraFx = new CameraEffects(this.renderer, camera);
@@ -659,20 +660,18 @@ export class Game {
       if (s === States.PLAYING) {
         this.waveSystem.update(dt, this);
       }
-      for (const e of [...ctx.enemyList]) {
-        if (e.state === 'DIVING' && e.curveDone) {
-          // (handled internally)
-        }
+      // Iterate the live list directly and splice in place — the old
+      // `[...ctx.enemyList]` copied up to ~48 references EVERY frame
+      // (pure GC churn) and the separate cleanup pass was then
+      // redundant because kills already release + splice via
+      // _onEnemyKilled -> _releaseEnemy.
+      for (let i = ctx.enemyList.length - 1; i >= 0; i--) {
+        const e = ctx.enemyList[i];
         e.update(this, dt, this.waveSystem.wave);
         if (!e.active) {
+          ctx.enemyList.splice(i, 1);
           this._releaseEnemy(e);
-        } else {
-          // re-add if already in list (no-op)
         }
-      }
-      // cleanup list
-      for (let i = ctx.enemyList.length - 1; i >= 0; i--) {
-        if (!ctx.enemyList[i].active) ctx.enemyList.splice(i, 1);
       }
     }
 
