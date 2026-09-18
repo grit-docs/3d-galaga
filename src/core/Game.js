@@ -178,6 +178,34 @@ export class Game {
     return new Enemy(type);
   }
 
+  /**
+   * Release the GPU-side resources owned by a ship group (geometries +
+   * materials). Ship groups are NOT pooled — `buildEnemyShip` runs fresh
+   * for every wave's spawn, and each call allocates ~5 new MeshStandard/
+   * emissive materials plus, for the 'elite' type, new extruded/prism
+   * geometries. Previously nothing ever disposed them, so the material
+   * and geometry buffers accumulated for the entire session (thousands
+   * of programs/attribute buffers over many waves) — this is what made
+   * the game crawl the longer it ran. Shared module-level geometries
+   * (GEO.*) are safe to dispose because the WebGLProgram cache keys on
+   * the material, so the compiled shader is retained and re-uploaded
+   * only once; the geometry attribute buffer is freed.
+   */
+  _disposeShipGroup(g) {
+    if (!g) return;
+    const seen = new Set();
+    g.traverse((o) => {
+      const geo = o.geometry;
+      if (geo && !seen.has(geo)) { seen.add(geo); geo.dispose(); }
+      const mat = o.material;
+      if (mat) {
+        for (const m of (Array.isArray(mat) ? mat : [mat])) {
+          if (m && !seen.has(m)) { seen.add(m); m.dispose(); }
+        }
+      }
+    });
+  }
+
   /** Weighted power-up type pick. Lives above the class so no call
    *  site can reference it before the module finishes evaluating. */
   _pickPowerupWeighted() {
@@ -222,7 +250,11 @@ export class Game {
       e._baseRadius = ENEMY_CFG.RADIUS[type] ?? e._baseRadius;
       e.radius = e._baseRadius;
       e._collectEngines();
-      void g; // old group is orphaned (GC will reclaim)
+      // `g` was never added to the scene, so it needs no scene.remove —
+      // but its materials/geometries are still live GPU resources and
+      // would otherwise leak forever. Dispose them now that the group
+      // is being replaced.
+      this._disposeShipGroup(g);
     }
     return e;
   }
@@ -245,6 +277,10 @@ export class Game {
     const i = list.indexOf(e);
     if (i !== -1) list.splice(i, 1);
     this.renderer.scene.remove(e.group);
+    // Do NOT dispose the group here: the pool reuses it next wave, and
+    // re-adding a disposed group would force a shader/buffer re-upload.
+    // GPU resources are only freed when a group is actually REPLACED
+    // (see acquireEnemy), which is the sole source of churn.
     e.onRecycle();
     this._context.enemyPool.release(e);
   }
