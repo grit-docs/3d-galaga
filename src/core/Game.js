@@ -160,7 +160,7 @@ export class Game {
     // projection (2 matrix multiplies) + trail buffer writes on the
     // CPU, so long sessions felt the cost. 50 stars still read as a
     // starfield with the motion trails and keeps the frame cheap.
-    ctx.starfield = new StarFieldSystem(scene, 50);
+    ctx.starfield = new StarFieldSystem(scene, 200);
 
     this._explosion = new ExplosionEffect(scene, ctx.particles);
     this._cameraFx = new CameraEffects(this.renderer, camera);
