@@ -104,10 +104,10 @@ export class CollisionSystem {
       const pp = p.group.position;
       const plp = player.group.position;
       const dx = pp.x - plp.x;
-      const dy = pp.y - plp.y;
+      // same x/z plane rule as the player-shot↔enemy pass
       const dz = pp.z - plp.z;
       const r = p.radius + player.radius;
-      if (dx * dx + dy * dy + dz * dz < r * r) {
+      if (dx * dx + dz * dz < r * r) {
         this._game.onPlayerHit?.(p.damage);
         p.kill();
       }

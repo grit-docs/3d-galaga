@@ -44,9 +44,9 @@ const BOUNDS = {
 // is where the curve reaches full density; FADE_INNER is the flat
 // floor. The exact centre keeps FLOOR × base brightness so it reads as
 // "fewer, fainter stars" rather than a dead hole.
-const FADE_INNER  = 0.00;
-const FADE_OUTER  = 0.70;
-const FADE_FLOOR  = 0.10;          // 10 % of base brightness at r = 0
+const FADE_INNER  = 0.45;          // hole below this radius
+const FADE_OUTER  = 0.80;          // dense only at screen edges
+const FADE_FLOOR  = 0.0;
 
 /** 1 = full density, FADE_FLOOR = sparsest (screen centre). */
 function _radialFade(x, y) {
@@ -198,7 +198,7 @@ export class StarFieldSystem {
         P[i3 + 1] = (Math.random() - 0.5) * BOUNDS.Y * 2;
         const t = (P[i3 + 2] - BOUNDS.Z_MIN) /
                   (BOUNDS.Z_MAX - BOUNDS.Z_MIN);
-        S[i] = 14 + t * 30;
+        S[i] = 40 + t * 80; // stronger velocity feel
       }
 
       // ── radial centre fade ───────────────────────────────────────
@@ -210,7 +210,10 @@ export class StarFieldSystem {
       if (hasCam) {
         v.set(P[i3], P[i3 + 1], P[i3 + 2]);
         v.applyMatrix4(inv);          // world → eye
-        v.applyMatrix4(proj);         // eye   → NDC  (w divided)
+        v.applyMatrix4(proj);         // eye   → clip
+        if (Math.abs(v.w) > 1e-6) {   // avoid div-by-zero → NaN colours
+          v.x /= v.w; v.y /= v.w;     // clip → NDC
+        }
         // v.x, v.y are now in -1..1; centre = (0,0)
         f = _radialFade(v.x, v.y);
       }

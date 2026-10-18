@@ -124,7 +124,7 @@ export class Player {
       // clamp
       const max = PLAYER.MAX_SPEED_X;
       if (this.velocityX > max) this.velocityX = max;
-      else if (this.velocityX < -max) this.velocityX = max;
+      else if (this.velocityX < -max) this.velocityX = -max;
     }
 
     this.group.position.x += this.velocityX * dt;
