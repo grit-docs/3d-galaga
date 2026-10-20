@@ -156,10 +156,11 @@ export class Game {
     ctx.spawnPowerUp = (opts) => ctx.projectiles.spawnPowerUp(opts);
 
     ctx.particles = new ParticleSystem(scene, 1400);
-    // Star count cut to 50: every star costs a per-frame camera
-    // projection (2 matrix multiplies) + trail buffer writes on the
-    // CPU, so long sessions felt the cost. 50 stars still read as a
-    // starfield with the motion trails and keeps the frame cheap.
+    // Star count: 1000 (intentional — richer starfield; the earlier
+    // 50-star cut is no longer needed now that the GPU-resource
+    // memory leak is fixed). Per-star CPU cost is one camera
+    // projection + trail buffer writes; fade colour uploads stay rare
+    // thanks to the 1% quantisation in StarFieldSystem.
     ctx.starfield = new StarFieldSystem(scene, 1000);
 
     this._explosion = new ExplosionEffect(scene, ctx.particles);
